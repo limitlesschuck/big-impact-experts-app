@@ -66,7 +66,7 @@ export async function POST(
     const pdfBuffer = await renderToBuffer(pdfElement);
 
     const eventSlug = panelist.event.slug ?? panelist.event.id;
-    const filename = `panelist-guides/${eventSlug}-${panelist.id}-guide.pdf`;
+    const filename = `panelist-guides/${eventSlug}-${panelist.id}-guide-${Date.now()}.pdf`;
 
     await R2.send(
       new PutObjectCommand({
