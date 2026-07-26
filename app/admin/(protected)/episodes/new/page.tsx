@@ -39,7 +39,9 @@ const MAX_PANELISTS = 5;
 export default function NewEventPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [importWarning, setImportWarning] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     titleOriginal: "",
@@ -61,6 +63,38 @@ export default function NewEventPage() {
 
   function removePanelist(index: number) {
     setPanelists((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setImporting(true);
+    setMessage(null);
+    setImportWarning(null);
+
+    const text = await file.text();
+    const res = await fetch("/api/admin/episodes/import-csv", {
+      method: "POST",
+      headers: { "Content-Type": "text/csv" },
+      body: text,
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage({ type: "error", text: data.error ?? "Failed to import CSV" });
+      setImporting(false);
+      return;
+    }
+
+    setPanelists(
+      data.panelists.map((p: PanelistForm) => ({ ...emptyPanelist(), ...p }))
+    );
+    if (data.skippedRows?.length > 0) {
+      setImportWarning(`Skipped: ${data.skippedRows.join(", ")}`);
+    }
+    setImporting(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -97,9 +131,28 @@ export default function NewEventPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <h1 className="text-lg font-semibold text-gray-900 mb-1">Create new event</h1>
         <p className="text-sm text-gray-500">
-          Manual entry — panelist details are normally imported from the Collab
-          Pilot CSV export (not yet built), this form is the fallback.
+          Import panelist details from the Collab Pilot CSV export, or fill the
+          form in manually below.
         </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">Import from Collab Pilot</h2>
+        <p className="text-xs text-gray-500 mb-3">
+          Upload the per-event CSV export. Rows pre-fill the panelist fields
+          below — review and edit before creating the event.
+        </p>
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleCsvImport}
+          disabled={importing}
+          className="text-sm"
+        />
+        {importing && <p className="text-xs text-gray-500 mt-2">Importing…</p>}
+        {importWarning && (
+          <p className="text-xs text-amber-600 mt-2">{importWarning}</p>
+        )}
       </div>
 
       {message && (
