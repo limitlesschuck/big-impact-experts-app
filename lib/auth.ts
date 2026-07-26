@@ -21,7 +21,6 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("[DEBUG-LOGIN] missing email or password in submitted credentials");
           return null;
         }
 
@@ -29,16 +28,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        console.log(
-          "[DEBUG-LOGIN] lookup for email:",
-          JSON.stringify(credentials.email),
-          "-> user found:",
-          !!user,
-          user ? `(role: ${user.role}, has password hash: ${!!user.password}, hash length: ${user.password?.length ?? 0})` : ""
-        );
-
         if (!user || !user.password) {
-          console.log("[DEBUG-LOGIN] no user or no stored password hash, returning null");
           return null;
         }
 
@@ -47,10 +37,7 @@ export const authOptions: NextAuthOptions = {
           user.password
         );
 
-        console.log("[DEBUG-LOGIN] bcrypt.compare result:", passwordValid);
-
         if (!passwordValid) {
-          console.log("[DEBUG-LOGIN] password did not match stored hash, returning null");
           return null;
         }
 
