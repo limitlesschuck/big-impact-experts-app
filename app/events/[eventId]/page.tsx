@@ -1,29 +1,27 @@
-import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
+import { getPublicEvent, isGiftPublicWindow } from "@/lib/eventAccess";
+import { normalizeToParagraph } from "@/lib/textFormatting";
 
 export const dynamic = "force-dynamic";
 
-async function getEvent(idOrSlug: string) {
-  return prisma.event.findFirst({
-    where: {
-      publishStatus: "published",
-      OR: [{ id: idOrSlug }, { slug: idOrSlug }],
-    },
-    include: { panelists: true },
-  });
-}
+// Points at the real Membership Offer Sales Page once it exists.
+// Defaults to the homepage so this doesn't hard-fail before then.
+const MEMBERSHIP_SALES_PAGE_URL = process.env.MEMBERSHIP_SALES_PAGE_URL || "/";
 
-// Placeholder — the real public Event Page (replay + time-gated free
-// gifts per phase-1-spec-addendum.md Section 6) is a follow-up task
-// once there's BIE copy/branding to build it from.
 export default async function EventDetailPage({
   params,
 }: {
   params: { eventId: string };
 }) {
-  const event = await getEvent(params.eventId);
+  const event = await getPublicEvent(params.eventId);
   if (!event) notFound();
+
+  if (!isGiftPublicWindow(event)) {
+    redirect(MEMBERSHIP_SALES_PAGE_URL);
+  }
+
+  const giftsAvailable = event.panelists.some((p) => p.toolEntry?.freeGiftTitle);
 
   return (
     <div className="min-h-screen bg-white">
@@ -32,33 +30,56 @@ export default async function EventDetailPage({
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">
           {event.titleYoutube ?? event.titleOriginal}
         </h1>
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 mb-8">
           {new Date(event.eventDate).toLocaleDateString()}
         </p>
 
         {event.recordingUrl && (
-          <a
-            href={event.recordingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mb-8 text-sm font-medium text-brand-purple hover:underline"
-          >
-            Watch the replay →
-          </a>
+          <div className="mb-12">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Replay</h2>
+            <a
+              href={event.recordingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary"
+            >
+              Watch the replay →
+            </a>
+          </div>
         )}
 
-        {event.panelists.length > 0 && (
+        {giftsAvailable && (
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Panelists</h2>
-            <div className="space-y-3">
-              {event.panelists.map((p) => (
-                <div key={p.id} className="border border-gray-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-900">{p.name}</p>
-                  {p.titleByline && (
-                    <p className="text-xs text-gray-500">{p.titleByline}</p>
-                  )}
-                </div>
-              ))}
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Free Gifts</h2>
+            <div className="space-y-4">
+              {event.panelists
+                .filter((p) => p.toolEntry?.freeGiftTitle)
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="border border-gray-200 rounded-xl p-5"
+                  >
+                    <p className="text-sm font-medium text-gray-900 mb-1">{p.name}</p>
+                    <p className="text-base font-semibold text-gray-900 mb-2">
+                      {p.toolEntry!.freeGiftTitle}
+                    </p>
+                    {p.toolEntry!.freeGiftDescription && (
+                      <p className="text-sm text-gray-600 mb-4">
+                        {normalizeToParagraph(p.toolEntry!.freeGiftDescription)}
+                      </p>
+                    )}
+                    {p.toolEntry!.freeGiftUrl && (
+                      <a
+                        href={p.toolEntry!.freeGiftUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-primary"
+                      >
+                        Get the gift →
+                      </a>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         )}

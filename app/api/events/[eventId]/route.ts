@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPublicEvent, isGiftPublicWindow } from "@/lib/eventAccess";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
-  const { eventId } = params;
+  const event = await getPublicEvent(params.eventId);
 
-  const event = await prisma.event.findFirst({
-    where: {
-      publishStatus: "published",
-      OR: [{ id: eventId }, { slug: eventId }],
-    },
-    include: {
-      panelists: { include: { toolEntry: true } },
-    },
-  });
-
-  if (!event) {
+  if (!event || !isGiftPublicWindow(event)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
