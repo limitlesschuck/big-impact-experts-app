@@ -1,57 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { fetchCaptivateEpisodes, extractGuestName } from "@/lib/captivate";
 
+// Disabled: the Captivate RSS integration assumed one-guest-per-episode
+// fields (captivateId, episodeNumber) that don't exist on Event in the
+// BIE data model. Left in place (not deleted) per the no-delete-without-
+// an-explicit-ask rule, in case a future phase pulls in Chuck's own
+// podcast RSS feed as a content source again.
 export async function POST() {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !["super_admin", "editor"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const episodes = await fetchCaptivateEpisodes();
-    let created = 0;
-    let skipped = 0;
-
-    for (const ep of episodes) {
-      const existing = await prisma.episode.findUnique({
-        where: { captivateId: ep.id },
-      });
-
-      if (existing) {
-        skipped++;
-        continue;
-      }
-
-      await prisma.episode.create({
-        data: {
-          captivateId: ep.id,
-          titleOriginal: ep.title,
-          descriptionOriginal: ep.description,
-          audioUrl: ep.audioUrl,
-          thumbnailUrl: ep.thumbnailUrl,
-          durationSeconds: ep.durationSeconds,
-          episodeNumber: ep.episodeNumber,
-          captivatePublishedAt: ep.publishedAt
-            ? new Date(ep.publishedAt)
-            : null,
-          guestName: extractGuestName(ep.title),
-          publishStatus: "draft",
-        },
-      });
-      created++;
-    }
-
-    return NextResponse.json({
-      created,
-      skipped,
-      total: episodes.length,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return NextResponse.json(
+    { error: "Captivate ingestion is disabled in this app — not part of the Phase 1 Event/Panelist model" },
+    { status: 501 }
+  );
 }

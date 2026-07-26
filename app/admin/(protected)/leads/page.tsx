@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-interface GuideDownloadEntry {
-  id: string;
-  episodeId: string;
-  episodeTitle: string;
-  createdAt: string;
-}
-
 interface Lead {
   id: string;
   firstName: string | null;
@@ -20,8 +13,7 @@ interface Lead {
   resultType: string | null;
   emailSynced: boolean;
   createdAt: string;
-  sourceEpisode: { id: string; titleOriginal: string } | null;
-  guideDownloads: GuideDownloadEntry[];
+  sourceEvent: { id: string; titleOriginal: string } | null;
 }
 
 interface GuideOption {
@@ -257,8 +249,8 @@ export default function LeadsPage() {
                   value={selected.emailSynced ? "Yes" : "No"}
                 />
                 <DetailRow
-                  label="Source episode"
-                  value={selected.sourceEpisode?.titleOriginal ?? "Direct"}
+                  label="Source event"
+                  value={selected.sourceEvent?.titleOriginal ?? "Direct"}
                 />
                 <DetailRow
                   label="Date"
@@ -266,23 +258,12 @@ export default function LeadsPage() {
                 />
               </div>
 
-              {selected.guideDownloads.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <h3 className="text-xs font-semibold text-gray-500 mb-2">
-                    Guide downloads ({selected.guideDownloads.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {selected.guideDownloads.map((d) => (
-                      <div key={d.id} className="flex items-start justify-between gap-2">
-                        <span className="text-xs text-gray-900">{d.episodeTitle}</span>
-                        <span className="text-xs text-gray-400 shrink-0">
-                          {new Date(d.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-500 mb-2">
+                  Guide downloads
+                </h3>
+                <p className="text-xs text-gray-400">Not tracked in Phase 1</p>
+              </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <a

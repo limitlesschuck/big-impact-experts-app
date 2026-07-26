@@ -6,10 +6,10 @@ import { signOut } from "next-auth/react";
 
 const navItems = [
   { label: "Dashboard", href: "/admin" },
-  { label: "Episodes", href: "/admin/episodes" },
+  { label: "Events", href: "/admin/episodes" },
   { label: "Leads", href: "/admin/leads" },
   { label: "Assessment", href: "/admin/assessment" },
-  { label: "Coaches", href: "/admin/coaches" },
+  { label: "Expert Referrals", href: "/admin/coaches" },
   { label: "Affiliates", href: "/admin/affiliates" },
   { label: "AI Content", href: "/admin/ai-content" },
   { label: "Settings", href: "/admin/settings" },
@@ -30,7 +30,7 @@ export default function AdminSidebar({ user }: Props) {
     <aside className="w-56 bg-white border-r border-gray-200 flex flex-col min-h-screen">
       <div className="p-5 border-b border-gray-200">
         <p className="text-sm font-semibold text-gray-900 truncate">
-          Limitless Living
+          Big Impact Experts
         </p>
         <p className="text-xs text-gray-500 mt-0.5">Admin</p>
       </div>

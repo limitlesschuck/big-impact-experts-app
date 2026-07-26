@@ -4,13 +4,13 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 async function getStats() {
-  const [episodes, leads, coaches, pendingEpisodes] = await Promise.all([
-    prisma.episode.count(),
+  const [events, leads, expertReferrals, pendingEvents] = await Promise.all([
+    prisma.event.count(),
     prisma.lead.count(),
-    prisma.coach.count(),
-    prisma.episode.count({ where: { publishStatus: "approved" } }),
+    prisma.expertReferral.count(),
+    prisma.event.count({ where: { publishStatus: "approved" } }),
   ]);
-  return { episodes, leads, coaches, pendingEpisodes };
+  return { events, leads, expertReferrals, pendingEvents };
 }
 
 export default async function AdminDashboardPage() {
@@ -27,13 +27,13 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
-        <StatCard label="Total episodes" value={stats.episodes} />
+        <StatCard label="Total events" value={stats.events} />
         <StatCard label="Total leads" value={stats.leads} />
-        <StatCard label="Active coaches" value={stats.coaches} />
+        <StatCard label="Expert referrals" value={stats.expertReferrals} />
         <StatCard
           label="Ready to publish"
-          value={stats.pendingEpisodes}
-          highlight={stats.pendingEpisodes > 0}
+          value={stats.pendingEvents}
+          highlight={stats.pendingEvents > 0}
         />
       </div>
 
@@ -44,13 +44,13 @@ export default async function AdminDashboardPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <QuickAction
             href="/admin/episodes/new"
-            label="Add episode"
-            description="Manually enter episode details"
+            label="Add event"
+            description="Manually enter event + panelist details"
           />
           <QuickAction
             href="/admin/episodes?filter=draft"
             label="Review AI content"
-            description="Approve generated titles and descriptions"
+            description="Approve generated guide drafts"
           />
           <QuickAction
             href="/admin/leads"

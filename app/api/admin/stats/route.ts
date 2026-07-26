@@ -7,12 +7,12 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [episodes, leads, coaches, pendingEpisodes] = await Promise.all([
-    prisma.episode.count(),
+  const [events, leads, expertReferrals, pendingEvents] = await Promise.all([
+    prisma.event.count(),
     prisma.lead.count(),
-    prisma.coach.count(),
-    prisma.episode.count({ where: { publishStatus: "approved" } }),
+    prisma.expertReferral.count(),
+    prisma.event.count({ where: { publishStatus: "approved" } }),
   ]);
 
-  return NextResponse.json({ episodes, leads, coaches, pendingEpisodes });
+  return NextResponse.json({ events, leads, expertReferrals, pendingEvents });
 }

@@ -4,6 +4,21 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateSlug } from "@/lib/slug";
 
+interface PanelistInput {
+  name: string;
+  titleByline?: string;
+  titleAreaOfExpertise?: string;
+  bio?: string;
+  headshotUrl?: string;
+  email?: string;
+  freeGiftTitle?: string;
+  freeGiftDescription?: string;
+  freeGiftUrl?: string;
+  vipGiftTitle?: string;
+  vipGiftDescription?: string;
+  vipGiftUrl?: string;
+}
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !["super_admin", "editor"].includes(session.user.role)) {
@@ -12,52 +27,69 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const {
-    captivateId,
-    episodeNumber,
-    guestName,
-    guestEmail,
-    riversideTitle,
-    riversideKeywords,
-    transcript,
-    descriptionOriginal,
-    publishDate,
-    coverArtUrl,
-    mp4Url,
+    titleOriginal,
+    eventDate,
+    hostName,
+    recordingUrl,
+    transcriptRaw,
+    panelists,
+  }: {
+    titleOriginal: string;
+    eventDate: string;
+    hostName?: string;
+    recordingUrl?: string;
+    transcriptRaw?: string;
+    panelists?: PanelistInput[];
   } = body;
 
-  if (!riversideTitle && !guestName) {
+  if (!titleOriginal || !eventDate) {
     return NextResponse.json(
-      { error: "At least a working title or guest name is required" },
+      { error: "Event title and event date are required" },
       { status: 400 }
     );
   }
 
+  const eventDateObj = new Date(eventDate);
   const slug = generateSlug({
-    episodeNumber: episodeNumber ? parseInt(episodeNumber) : null,
     titleYoutube: null,
-    titleOriginal: riversideTitle ?? `Episode with ${guestName ?? "guest"}`,
-    guestName: guestName || null,
+    titleOriginal,
+    eventDate: eventDateObj,
   });
 
-  const episode = await prisma.episode.create({
+  const event = await prisma.event.create({
     data: {
       slug,
-      captivateId: captivateId || null,
-      episodeNumber: episodeNumber ? parseInt(episodeNumber) : null,
-      titleOriginal: riversideTitle ?? `Episode with ${guestName}`,
-      riversideTitle: riversideTitle || null,
-      riversideKeywords: riversideKeywords || null,
-      transcript: transcript || null,
-      descriptionOriginal: descriptionOriginal || null,
-      guestName: guestName || null,
-      guestEmail: guestEmail || null,
-      coverArtUrl: coverArtUrl || null,
-      thumbnailUrl: coverArtUrl || null,
-      mp4Url: mp4Url || null,
-      captivatePublishedAt: publishDate ? new Date(publishDate) : null,
+      titleOriginal,
+      eventDate: eventDateObj,
+      hostName: hostName || null,
+      recordingUrl: recordingUrl || null,
+      transcriptRaw: transcriptRaw || null,
+      giftPublicUntil: new Date(eventDateObj.getTime() + 72 * 60 * 60 * 1000),
       publishStatus: "draft",
+      panelists: {
+        create: (panelists ?? [])
+          .filter((p) => p.name?.trim())
+          .map((p) => ({
+            name: p.name,
+            titleByline: p.titleByline || null,
+            titleAreaOfExpertise: p.titleAreaOfExpertise || null,
+            bio: p.bio || null,
+            headshotUrl: p.headshotUrl || null,
+            email: p.email || null,
+            toolEntry: {
+              create: {
+                freeGiftTitle: p.freeGiftTitle || null,
+                freeGiftDescription: p.freeGiftDescription || null,
+                freeGiftUrl: p.freeGiftUrl || null,
+                vipGiftTitle: p.vipGiftTitle || null,
+                vipGiftDescription: p.vipGiftDescription || null,
+                vipGiftUrl: p.vipGiftUrl || null,
+              },
+            },
+          })),
+      },
     },
   });
 
-  return NextResponse.json({ id: episode.id, success: true });
+  return NextResponse.json({ id: event.id, success: true });
 }

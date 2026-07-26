@@ -116,32 +116,6 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
     textAlign: "center",
   },
-  ctaBox: {
-    backgroundColor: "#F5F3FF",
-    borderWidth: 1,
-    borderColor: "#DDD6FE",
-    borderRadius: 6,
-    padding: 16,
-    marginTop: 28,
-    marginBottom: 8,
-  },
-  ctaTitle: {
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    color: "#2D1B69",
-    marginBottom: 4,
-  },
-  ctaText: {
-    fontSize: 10,
-    color: "#4C1D95",
-    lineHeight: 1.6,
-  },
-  ctaUrl: {
-    fontSize: 10,
-    color: "#7C3AED",
-    marginTop: 6,
-    fontFamily: "Helvetica-Bold",
-  },
 });
 
 function parseLines(text: string): string[] {
@@ -151,55 +125,43 @@ function parseLines(text: string): string[] {
     .filter(Boolean);
 }
 
-interface EpisodeGuidePDFProps {
-  showName: string;
-  episodeTitle: string;
-  episodeNumber: number | null;
-  guestName: string | null;
+interface PanelistGuidePDFProps {
+  eventTitle: string;
+  panelistName: string;
   guideBio: string;
   guideFrameworks: string;
   guideTakeaways: string;
   guideQuotes: string;
   guideActionItems: string;
-  assessmentUrl: string;
 }
 
-export function EpisodeGuidePDF({
-  showName,
-  episodeTitle,
-  episodeNumber,
-  guestName,
+export function PanelistGuidePDF({
+  eventTitle,
+  panelistName,
   guideBio,
   guideFrameworks,
   guideTakeaways,
   guideQuotes,
   guideActionItems,
-  assessmentUrl,
-}: EpisodeGuidePDFProps) {
-  const guideTitle = guestName
-    ? `${guestName} Episode Guide`
-    : `Episode Guide`;
+}: PanelistGuidePDFProps) {
+  const guideTitle = `${panelistName} Guide`;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.showName}>{showName}</Text>
-          {episodeNumber && (
-            <Text style={styles.headerSubtitle}>Episode {episodeNumber}</Text>
-          )}
-          <Text style={styles.headerTitle}>{episodeTitle}</Text>
+          <Text style={styles.headerTitle}>{eventTitle}</Text>
         </View>
 
         {/* Guide title */}
         <Text style={styles.guideTitle}>{guideTitle}</Text>
         <View style={styles.guideDivider} />
 
-        {/* About the guest */}
+        {/* About the panelist */}
         {guideBio ? (
           <View>
-            <Text style={styles.sectionTitle}>About {guestName ?? "the guest"}</Text>
+            <Text style={styles.sectionTitle}>About {panelistName}</Text>
             {parseLines(guideBio).map((line, i) => (
               <Text key={i} style={styles.bodyText}>{line}</Text>
             ))}
@@ -253,20 +215,10 @@ export function EpisodeGuidePDF({
           </View>
         ) : null}
 
-        {/* CTA box */}
-        <View style={styles.ctaBox}>
-          <Text style={styles.ctaTitle}>Not sure where to start?</Text>
-          <Text style={styles.ctaText}>
-            Take our free assessment and we&apos;ll match you with the right episodes,
-            resources, and support based on exactly what you&apos;re going through.
-          </Text>
-          <Text style={styles.ctaUrl}>{assessmentUrl}</Text>
-        </View>
-
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            © {new Date().getFullYear()} {showName} — All rights reserved
+            © {new Date().getFullYear()} {eventTitle}
           </Text>
         </View>
       </Page>

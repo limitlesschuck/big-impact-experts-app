@@ -2,23 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-type DataTool = "slugs" | "numbers" | "import" | null;
+type DataTool = "slugs" | null;
 
 const TOOL_WARNINGS: Record<Exclude<DataTool, null>, { title: string; body: string; confirmLabel: string }> = {
   slugs: {
-    title: "Generate slugs for all episodes?",
-    body: "This will overwrite the existing slug on any episode whose slug was auto-generated, which can change live public URLs. Episodes with a manually-edited slug are skipped.",
+    title: "Generate slugs for all events?",
+    body: "This will overwrite the existing slug on any event whose slug was auto-generated, which can change live public URLs. Events with a manually-edited slug are skipped.",
     confirmLabel: "Yes, generate slugs",
-  },
-  numbers: {
-    title: "Sync episode numbers from Captivate?",
-    body: "This will overwrite the episode number field on episodes that already have one set, based on Captivate's published order. This can renumber episodes you've manually adjusted.",
-    confirmLabel: "Yes, sync episode numbers",
-  },
-  import: {
-    title: "Import new episodes from Captivate?",
-    body: "This will only add new episodes. Existing episode data including titles, descriptions, and all customised content will not be changed.",
-    confirmLabel: "Yes, import new episodes",
   },
 };
 
@@ -31,8 +21,6 @@ export default function SettingsPage() {
   const [dataToolsOpen, setDataToolsOpen] = useState(false);
   const [confirmTool, setConfirmTool] = useState<DataTool>(null);
   const [generatingSlugs, setGeneratingSlugs] = useState(false);
-  const [syncingNumbers, setSyncingNumbers] = useState(false);
-  const [ingesting, setIngesting] = useState(false);
   const [toolResult, setToolResult] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,42 +64,8 @@ export default function SettingsPage() {
     setGeneratingSlugs(false);
   }
 
-  async function handleSyncNumbers() {
-    setConfirmTool(null);
-    setSyncingNumbers(true);
-    setToolResult(null);
-    try {
-      const res = await fetch("/api/admin/episodes/sync-numbers", { method: "POST" });
-      const data = await res.json();
-      setToolResult(data.message ?? "Sync complete");
-    } catch {
-      setToolResult("Error: sync failed");
-    }
-    setSyncingNumbers(false);
-  }
-
-  async function handleIngest() {
-    setConfirmTool(null);
-    setIngesting(true);
-    setToolResult(null);
-    try {
-      const res = await fetch("/api/admin/episodes/ingest", { method: "POST" });
-      const data = await res.json();
-      if (data.error) {
-        setToolResult(`Error: ${data.error}`);
-      } else {
-        setToolResult(`Done — ${data.created} new episodes imported, ${data.skipped} already existed`);
-      }
-    } catch {
-      setToolResult("Error: Failed to connect to Captivate");
-    }
-    setIngesting(false);
-  }
-
   function runConfirmedTool() {
     if (confirmTool === "slugs") handleGenerateSlugs();
-    else if (confirmTool === "numbers") handleSyncNumbers();
-    else if (confirmTool === "import") handleIngest();
   }
 
   return (
@@ -186,7 +140,7 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Data tools</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Bulk operations on episode data — use with caution
+              Bulk operations on event data — use with caution
             </p>
           </div>
           <span className={`text-gray-400 transition-transform ${dataToolsOpen ? "rotate-180" : ""}`}>
@@ -233,20 +187,6 @@ export default function SettingsPage() {
               className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               {generatingSlugs ? "Generating..." : "Generate slugs"}
-            </button>
-            <button
-              onClick={() => setConfirmTool("numbers")}
-              disabled={syncingNumbers}
-              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-            >
-              {syncingNumbers ? "Syncing..." : "Sync episode numbers"}
-            </button>
-            <button
-              onClick={() => setConfirmTool("import")}
-              disabled={ingesting}
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-            >
-              {ingesting ? "Importing..." : "Import from Captivate"}
             </button>
           </div>
         )}

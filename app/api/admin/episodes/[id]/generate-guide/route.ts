@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateGuideContent } from "@/lib/claude";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
@@ -13,17 +13,22 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const episode = await prisma.episode.findUnique({
-    where: { id: params.id },
-  });
-
-  if (!episode) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const { panelistId } = await req.json();
+  if (!panelistId) {
+    return NextResponse.json({ error: "panelistId is required" }, { status: 400 });
   }
 
-  if (!episode.transcript && !episode.descriptionOriginal) {
+  const panelist = await prisma.panelist.findFirst({
+    where: { id: panelistId, eventId: params.id },
+  });
+
+  if (!panelist) {
+    return NextResponse.json({ error: "Panelist not found on this event" }, { status: 404 });
+  }
+
+  if (!panelist.transcriptSegment && !panelist.bio) {
     return NextResponse.json(
-      { error: "Episode needs a transcript or show notes before generating a guide" },
+      { error: "Panelist needs a transcript segment or bio before generating a guide" },
       { status: 400 }
     );
   }
@@ -31,9 +36,9 @@ export async function POST(
   let generated;
   try {
     generated = await generateGuideContent({
-      guestName: episode.guestName,
-      transcript: episode.transcript,
-      descriptionOriginal: episode.descriptionOriginal,
+      panelistName: panelist.name,
+      panelistBio: panelist.bio,
+      transcriptSegment: panelist.transcriptSegment,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -41,15 +46,25 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  await prisma.episode.update({
-    where: { id: episode.id },
+  await prisma.panelist.update({
+    where: { id: panelist.id },
     data: {
-      guideBio: generated.guestBio,
+      guideBio: generated.bio,
       guideFrameworks: generated.frameworks,
       guideTakeaways: generated.takeaways,
       guideQuotes: generated.quotes,
       guideActionItems: generated.actionItems,
       guidePdfUrl: null,
+    },
+  });
+
+  await prisma.aiContentLog.create({
+    data: {
+      panelistId: panelist.id,
+      provider: "anthropic",
+      contentType: "guide",
+      prompt: `Guide generation for panelist ${panelist.name}`,
+      output: JSON.stringify(generated),
     },
   });
 

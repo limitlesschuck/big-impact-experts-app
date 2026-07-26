@@ -10,47 +10,45 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const episodes = await prisma.episode.findMany({
+  const events = await prisma.event.findMany({
     where: { slug: null },
     select: {
       id: true,
-      episodeNumber: true,
       titleYoutube: true,
       titleOriginal: true,
-      guestName: true,
+      eventDate: true,
     },
   });
 
   let updated = 0;
   const errors: string[] = [];
 
-  for (const ep of episodes) {
+  for (const ev of events) {
     let slug = generateSlug({
-      episodeNumber: ep.episodeNumber,
-      titleYoutube: ep.titleYoutube,
-      titleOriginal: ep.titleOriginal,
-      guestName: ep.guestName,
+      titleYoutube: ev.titleYoutube,
+      titleOriginal: ev.titleOriginal,
+      eventDate: ev.eventDate,
     });
 
-    const existing = await prisma.episode.findUnique({ where: { slug } });
-    if (existing && existing.id !== ep.id) {
-      slug = `${slug}-${ep.id.slice(-4)}`;
+    const existing = await prisma.event.findUnique({ where: { slug } });
+    if (existing && existing.id !== ev.id) {
+      slug = `${slug}-${ev.id.slice(-4)}`;
     }
 
     try {
-      await prisma.episode.update({
-        where: { id: ep.id },
+      await prisma.event.update({
+        where: { id: ev.id },
         data: { slug },
       });
       updated++;
     } catch {
-      errors.push(ep.id);
+      errors.push(ev.id);
     }
   }
 
   return NextResponse.json({
     updated,
     errors,
-    message: `Generated slugs for ${updated} episodes`,
+    message: `Generated slugs for ${updated} events`,
   });
 }

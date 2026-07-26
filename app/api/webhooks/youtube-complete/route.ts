@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
 
-  if (!body?.episodeId || !body?.youtubeUrl) {
+  if (!body?.eventId || !body?.youtubeUrl) {
     return NextResponse.json(
-      { error: "episodeId and youtubeUrl are required" },
+      { error: "eventId and youtubeUrl are required" },
       { status: 400 }
     );
   }
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     ? body.youtubeUrl.split("watch?v=")[1].split("&")[0]
     : body.youtubeUrl.split("/").pop() ?? body.youtubeUrl;
 
-  const episode = await prisma.episode.update({
-    where: { id: body.episodeId },
+  const event = await prisma.event.update({
+    where: { id: body.eventId },
     data: {
       youtubeId,
       publishStatus: "published",
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    episodeId: episode.id,
+    eventId: event.id,
     youtubeId,
   });
 }

@@ -18,26 +18,27 @@ export async function GET(req: NextRequest) {
 
   const where = filter ? { publishStatus: filter } : {};
 
-  const [episodes, total] = await Promise.all([
-    prisma.episode.findMany({
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
       where,
-      orderBy: { captivatePublishedAt: "desc" },
+      orderBy: { eventDate: "desc" },
       skip,
       take: limit,
       select: {
         id: true,
-        episodeNumber: true,
+        eventDate: true,
         titleOriginal: true,
         titleYoutube: true,
-        guestName: true,
-        crisisCategory: true,
+        hostName: true,
         publishStatus: true,
-        captivatePublishedAt: true,
         youtubeId: true,
+        panelists: {
+          select: { id: true, name: true },
+        },
       },
     }),
-    prisma.episode.count({ where }),
+    prisma.event.count({ where }),
   ]);
 
-  return NextResponse.json({ episodes, total, page, limit });
+  return NextResponse.json({ events, total, page, limit });
 }

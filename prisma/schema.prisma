@@ -45,7 +45,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ── Users (extends NextAuth User with role) ───────────────────────
+// ── Users (admin/staff login — extends NextAuth User with role) ───
 
 model User {
   id            String    @id @default(cuid())
@@ -64,59 +64,101 @@ model User {
   publishLogs  PublishLog[]
 }
 
+// ── Members (paying subscribers — gated by Systeme.io tag, ────────
+// ── NOT admin/staff login; see open question in commit message) ───
+
+model Member {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  systemeTag String?
+  status     String   @default("active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([status])
+}
+
 // ── Core content tables ───────────────────────────────────────────
 
-model Episode {
-  id                    String    @id @default(cuid())
-  slug                  String?   @unique
-  captivateId           String?   @unique
-  youtubeId             String?
-  titleOriginal         String
-  titleYoutube          String?
-  titlePodcast          String?
-  descriptionOriginal   String?   @db.Text
-  descriptionYoutube    String?   @db.Text
-  descriptionWebsite    String?   @db.Text
-  transcript            String?   @db.Text
-  guestName             String?
-  guestBio              String?   @db.Text
-  guestEmail            String?
-  affiliateLink         String?
-  swipeCopy             String?   @db.Text
-  systemeContactId      String?
-  crisisCategory        String?
-  tags                  String[]
-  thumbnailUrl          String?
-  coverArtUrl           String?
-  youtubeThumbnailUrl   String?
-  audioUrl              String?
-  videoUrl              String?
-  mp4Url                String?
-  episodeNumber         Int?
-  riversideTitle        String?
-  riversideKeywords     String?   @db.Text
-  guideBio              String?   @db.Text
-  guideFrameworks       String?   @db.Text
-  guideTakeaways        String?   @db.Text
-  guideQuotes           String?   @db.Text
-  guideActionItems      String?   @db.Text
-  guidePdfUrl           String?
-  durationSeconds       Int?
-  publishStatus         String    @default("draft")
-  publishedAt           DateTime?
-  captivatePublishedAt  DateTime?
-  ctaId                 String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+model Event {
+  id                  String    @id @default(cuid())
+  slug                String?   @unique
+  eventDate           DateTime
+  hostName            String?
+  recordingUrl        String?
+  giftPublicUntil     DateTime?
+  transcriptRaw       String?   @db.Text
+  transcriptCleaned   String?   @db.Text
+  youtubeId           String?
+  titleOriginal       String
+  titleYoutube        String?
+  titlePodcast        String?
+  descriptionOriginal String?   @db.Text
+  descriptionYoutube  String?   @db.Text
+  descriptionWebsite  String?   @db.Text
+  tags                String[]
+  thumbnailUrl        String?
+  coverArtUrl         String?
+  youtubeThumbnailUrl String?
+  audioUrl            String?
+  videoUrl            String?
+  mp4Url              String?
+  durationSeconds     Int?
+  publishStatus       String    @default("draft")
+  publishedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  cta         Cta?         @relation(fields: [ctaId], references: [id])
+  panelists   Panelist[]
   leads       Lead[]
   publishLogs PublishLog[]
-  aiLogs         AiContentLog[]
-  guideDownloads GuideDownload[]
 
-  @@index([crisisCategory])
   @@index([publishStatus])
+  @@index([eventDate])
+}
+
+model Panelist {
+  id                     String   @id @default(cuid())
+  eventId                String
+  name                   String
+  titleByline            String?
+  titleAreaOfExpertise   String?
+  bio                    String?  @db.Text
+  headshotUrl            String?
+  email                  String?
+  affiliateLink          String?
+  swipeCopy              String?  @db.Text
+  transcriptSegment      String?  @db.Text
+  guideBio               String?  @db.Text
+  guideFrameworks        String?  @db.Text
+  guideTakeaways         String?  @db.Text
+  guideQuotes            String?  @db.Text
+  guideActionItems       String?  @db.Text
+  guidePdfUrl            String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  event     Event      @relation(fields: [eventId], references: [id])
+  toolEntry ToolEntry?
+  aiLogs    AiContentLog[]
+
+  @@index([eventId])
+}
+
+model ToolEntry {
+  id                       String   @id @default(cuid())
+  panelistId               String   @unique
+  freeGiftTitle            String?
+  freeGiftDescription      String?  @db.Text
+  freeGiftUrl              String?
+  vipGiftTitle             String?
+  vipGiftDescription       String?  @db.Text
+  vipGiftUrl               String?
+  featured                 Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  panelist Panelist @relation(fields: [panelistId], references: [id])
 }
 
 model Cta {
@@ -127,48 +169,34 @@ model Cta {
   buttonLabel     String
   assessmentEntry Boolean  @default(true)
   updatedAt       DateTime @updatedAt
-
-  episodes Episode[]
 }
 
-// ── Assessment + lead funnel tables ──────────────────────────────
+// ── Assessment + lead funnel tables (dormant — reserved for ───────
+// ── Phase 3 Affiliate Tracking, not wired up in Phase 1) ──────────
 
 model Lead {
-  id              String    @id @default(cuid())
-  email           String
-  firstName       String?
-  crisisCategory  String
-  crisisDuration  String?
-  urgency         String?
-  score           Int?
-  resultType      String?
-  sourceEpisodeId String?
-  affiliateRouteId String?
-  coachId         String?
-  emailSynced     Boolean   @default(false)
-  ipAddress       String?
-  createdAt       DateTime  @default(now())
+  id                String    @id @default(cuid())
+  email             String
+  firstName         String?
+  crisisCategory    String
+  crisisDuration    String?
+  urgency           String?
+  score             Int?
+  resultType        String?
+  sourceEventId     String?
+  affiliateRouteId  String?
+  expertReferralId  String?
+  emailSynced       Boolean   @default(false)
+  ipAddress         String?
+  createdAt         DateTime  @default(now())
 
-  sourceEpisode  Episode?       @relation(fields: [sourceEpisodeId], references: [id])
-  affiliateRoute AffiliateRoute? @relation(fields: [affiliateRouteId], references: [id])
-  coach          Coach?          @relation(fields: [coachId], references: [id])
+  sourceEvent     Event?           @relation(fields: [sourceEventId], references: [id])
+  affiliateRoute  AffiliateRoute?  @relation(fields: [affiliateRouteId], references: [id])
+  expertReferral  ExpertReferral?  @relation(fields: [expertReferralId], references: [id])
 
   @@index([email])
   @@index([crisisCategory])
   @@index([urgency])
-}
-
-model GuideDownload {
-  id          String   @id @default(cuid())
-  email       String
-  firstName   String?
-  episodeId   String
-  createdAt   DateTime @default(now())
-
-  episode Episode @relation(fields: [episodeId], references: [id])
-
-  @@index([email])
-  @@index([episodeId])
 }
 
 model AffiliateRoute {
@@ -185,7 +213,7 @@ model AffiliateRoute {
   leads Lead[]
 }
 
-model Coach {
+model ExpertReferral {
   id               String   @id @default(cuid())
   name             String
   email            String   @unique
@@ -206,7 +234,7 @@ model Coach {
 
 model PublishLog {
   id             String   @id @default(cuid())
-  episodeId      String
+  eventId        String
   triggeredById  String?
   platform       String
   status         String   @default("pending")
@@ -214,8 +242,8 @@ model PublishLog {
   responseBody   Json?
   createdAt      DateTime @default(now())
 
-  episode     Episode @relation(fields: [episodeId], references: [id])
-  triggeredBy User?   @relation(fields: [triggeredById], references: [id])
+  event       Event @relation(fields: [eventId], references: [id])
+  triggeredBy User? @relation(fields: [triggeredById], references: [id])
 }
 
 model SiteConfig {
@@ -232,7 +260,7 @@ model AssessmentConfig {
 
 model AiContentLog {
   id          String   @id @default(cuid())
-  episodeId   String?
+  panelistId  String?
   provider    String
   contentType String
   prompt      String   @db.Text
@@ -241,5 +269,5 @@ model AiContentLog {
   approved    Boolean?
   createdAt   DateTime @default(now())
 
-  episode Episode? @relation(fields: [episodeId], references: [id])
+  panelist Panelist? @relation(fields: [panelistId], references: [id])
 }

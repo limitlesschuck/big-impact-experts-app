@@ -10,7 +10,7 @@ interface AssessmentBody {
   crisisCategory: string;
   crisisDuration: string;
   urgency: string;
-  sourceEpisodeId?: string;
+  sourceEventId?: string;
 }
 
 async function getAssessmentConfig() {
@@ -168,7 +168,7 @@ async function getAffiliateRoute(
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as AssessmentBody;
 
-  const { firstName, email, crisisCategory, crisisDuration, urgency, sourceEpisodeId } = body;
+  const { firstName, email, crisisCategory, crisisDuration, urgency, sourceEventId } = body;
 
   if (!email || !crisisCategory || !urgency) {
     return NextResponse.json(
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
       urgency,
       score,
       resultType,
-      sourceEpisodeId: sourceEpisodeId || null,
+      sourceEventId: sourceEventId || null,
       affiliateRouteId,
       ipAddress: ip,
       emailSynced: false,

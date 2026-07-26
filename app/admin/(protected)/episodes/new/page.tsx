@@ -4,45 +4,63 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function NewEpisodePage() {
+interface PanelistForm {
+  name: string;
+  titleByline: string;
+  titleAreaOfExpertise: string;
+  bio: string;
+  headshotUrl: string;
+  email: string;
+  freeGiftTitle: string;
+  freeGiftDescription: string;
+  freeGiftUrl: string;
+  vipGiftTitle: string;
+  vipGiftDescription: string;
+  vipGiftUrl: string;
+}
+
+const emptyPanelist = (): PanelistForm => ({
+  name: "",
+  titleByline: "",
+  titleAreaOfExpertise: "",
+  bio: "",
+  headshotUrl: "",
+  email: "",
+  freeGiftTitle: "",
+  freeGiftDescription: "",
+  freeGiftUrl: "",
+  vipGiftTitle: "",
+  vipGiftDescription: "",
+  vipGiftUrl: "",
+});
+
+const MAX_PANELISTS = 5;
+
+export default function NewEventPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [uploadingArt, setUploadingArt] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [form, setForm] = useState({
-    captivateId: "",
-    episodeNumber: "",
-    guestName: "",
-    guestEmail: "",
-    riversideTitle: "",
-    riversideKeywords: "",
-    transcript: "",
-    descriptionOriginal: "",
-    publishDate: "",
-    coverArtUrl: "",
-    mp4Url: "",
+    titleOriginal: "",
+    eventDate: "",
+    hostName: "Chuck Anderson",
+    recordingUrl: "",
+    transcriptRaw: "",
   });
 
-  async function handleCoverArtUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingArt(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("folder", "episode-art");
-    const res = await fetch("/api/admin/upload", {
-      method: "POST",
-      body: fd,
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setForm((f) => ({ ...f, coverArtUrl: data.url }));
-      setMessage({ type: "success", text: "Cover art uploaded — will be saved with the episode" });
-    } else {
-      setMessage({ type: "error", text: data.error ?? "Upload failed" });
-    }
-    setUploadingArt(false);
+  const [panelists, setPanelists] = useState<PanelistForm[]>([emptyPanelist()]);
+
+  function updatePanelist(index: number, patch: Partial<PanelistForm>) {
+    setPanelists((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  }
+
+  function addPanelist() {
+    setPanelists((rows) => (rows.length < MAX_PANELISTS ? [...rows, emptyPanelist()] : rows));
+  }
+
+  function removePanelist(index: number) {
+    setPanelists((rows) => rows.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,13 +70,16 @@ export default function NewEpisodePage() {
     const res = await fetch("/api/admin/episodes/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        panelists: panelists.filter((p) => p.name.trim()),
+      }),
     });
     const data = await res.json();
     if (res.ok && data.id) {
       router.push(`/admin/episodes/${data.id}`);
     } else {
-      setMessage({ type: "error", text: data.error ?? "Failed to create episode" });
+      setMessage({ type: "error", text: data.error ?? "Failed to create event" });
       setSaving(false);
     }
   }
@@ -67,237 +88,221 @@ export default function NewEpisodePage() {
     <div className="max-w-4xl">
       <div className="flex items-center gap-3 mb-6">
         <Link href="/admin/episodes" className="text-sm text-gray-500 hover:text-gray-900">
-          ← Episodes
+          ← Events
         </Link>
         <span className="text-gray-300">/</span>
-        <span className="text-sm text-gray-900 font-medium">New episode</span>
+        <span className="text-sm text-gray-900 font-medium">New event</span>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h1 className="text-lg font-semibold text-gray-900 mb-1">Create new episode</h1>
+        <h1 className="text-lg font-semibold text-gray-900 mb-1">Create new event</h1>
         <p className="text-sm text-gray-500">
-          Fill in the details from Riverside and Captivate. Claude will generate all content after you save.
+          Manual entry — panelist details are normally imported from the Collab
+          Pilot CSV export (not yet built), this form is the fallback.
         </p>
       </div>
 
       {message && (
-        <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
           {message.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Left — main content */}
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* Riverside content */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">
-                Riverside content
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Working title <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.riversideTitle}
-                    onChange={(e) => setForm((f) => ({ ...f, riversideTitle: e.target.value }))}
-                    className="input"
-                    placeholder="Title as generated by Riverside"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Keywords (from Riverside)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.riversideKeywords}
-                    onChange={(e) => setForm((f) => ({ ...f, riversideKeywords: e.target.value }))}
-                    className="input"
-                    placeholder="Paste keywords from Riverside"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Transcript <span className="text-brand-gold font-medium">← Claude&apos;s primary input</span>
-                  </label>
-                  <textarea
-                    value={form.transcript}
-                    onChange={(e) => setForm((f) => ({ ...f, transcript: e.target.value }))}
-                    rows={12}
-                    className="input font-mono text-xs"
-                    placeholder="Paste the full transcript from Riverside here — this is what Claude uses to generate all content"
-                  />
-                  {form.transcript && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {form.transcript.length.toLocaleString()} characters
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Show notes (from Riverside)
-                  </label>
-                  <textarea
-                    value={form.descriptionOriginal}
-                    onChange={(e) => setForm((f) => ({ ...f, descriptionOriginal: e.target.value }))}
-                    rows={5}
-                    className="input"
-                    placeholder="Paste Riverside show notes (optional — used as backup if no transcript)"
-                  />
-                </div>
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Event details */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Event details</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Event title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.titleOriginal}
+                onChange={(e) => setForm((f) => ({ ...f, titleOriginal: e.target.value }))}
+                className="input"
+                placeholder="e.g. July Collab Pilot Panel"
+                required
+              />
             </div>
-
-          </div>
-
-          {/* Right — metadata and assets */}
-          <div className="space-y-6">
-
-            {/* Episode details */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Episode details</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Episode number</label>
-                  <input
-                    type="number"
-                    value={form.episodeNumber}
-                    onChange={(e) => setForm((f) => ({ ...f, episodeNumber: e.target.value }))}
-                    className="input"
-                    placeholder="e.g. 16"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Guest name</label>
-                  <input
-                    type="text"
-                    value={form.guestName}
-                    onChange={(e) => setForm((f) => ({ ...f, guestName: e.target.value }))}
-                    className="input"
-                    placeholder="Full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Guest email</label>
-                  <input
-                    type="email"
-                    value={form.guestEmail}
-                    onChange={(e) => setForm((f) => ({ ...f, guestEmail: e.target.value }))}
-                    className="input"
-                    placeholder="guest@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Publish date</label>
-                  <input
-                    type="date"
-                    value={form.publishDate}
-                    onChange={(e) => setForm((f) => ({ ...f, publishDate: e.target.value }))}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Captivate episode ID
-                  </label>
-                  <input
-                    type="text"
-                    value={form.captivateId}
-                    onChange={(e) => setForm((f) => ({ ...f, captivateId: e.target.value }))}
-                    className="input"
-                    placeholder="Paste from Captivate draft"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Create the draft in Captivate first, then paste the ID here
-                  </p>
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Event date <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.eventDate}
+                onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
+                className="input"
+                required
+              />
             </div>
-
-            {/* Assets */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Assets</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Cover art
-                  </label>
-                  {form.coverArtUrl ? (
-                    <div>
-                      <img
-                        src={form.coverArtUrl}
-                        alt="Cover art"
-                        className="w-full rounded-lg border border-gray-200 mb-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, coverArtUrl: "" }))}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
-                        <div className="text-center">
-                          <p className="text-xs font-medium text-gray-600">
-                            {uploadingArt ? "Uploading..." : "Click to upload cover art"}
-                          </p>
-                          <p className="text-xs text-gray-400">JPG, PNG, WebP</p>
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleCoverArtUpload}
-                          className="hidden"
-                          disabled={uploadingArt}
-                        />
-                      </label>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Upload after Canva artwork is ready
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    MP4 URL (Google Drive)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.mp4Url}
-                    onChange={(e) => setForm((f) => ({ ...f, mp4Url: e.target.value }))}
-                    className="input"
-                    placeholder="Paste Google Drive MP4 link"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Can be added later before publishing
-                  </p>
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Host name</label>
+              <input
+                type="text"
+                value={form.hostName}
+                onChange={(e) => setForm((f) => ({ ...f, hostName: e.target.value }))}
+                className="input"
+                placeholder="Excluded from panelist transcript attribution"
+              />
             </div>
-
-            {/* Save button */}
-            <button
-              type="submit"
-              disabled={saving || !form.riversideTitle}
-              className="w-full px-4 py-3 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-            >
-              {saving ? "Creating episode..." : "Create episode → Generate with Claude"}
-            </button>
-            <p className="text-xs text-gray-400 text-center">
-              Claude will generate all content automatically after saving
-            </p>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Recording URL</label>
+              <input
+                type="text"
+                value={form.recordingUrl}
+                onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
+                className="input"
+                placeholder="Zoom/YouTube replay link"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Transcript (raw)
+              </label>
+              <textarea
+                value={form.transcriptRaw}
+                onChange={(e) => setForm((f) => ({ ...f, transcriptRaw: e.target.value }))}
+                rows={8}
+                className="input font-mono text-xs"
+                placeholder="Paste the raw Zoom VTT export here"
+              />
+            </div>
           </div>
         </div>
+
+        {/* Panelists */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Panelists ({panelists.length}/{MAX_PANELISTS})
+            </h2>
+            {panelists.length < MAX_PANELISTS && (
+              <button
+                type="button"
+                onClick={addPanelist}
+                className="text-xs font-medium text-brand-purple hover:underline"
+              >
+                + Add panelist
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {panelists.map((p, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-gray-700">Panelist {i + 1}</p>
+                  {panelists.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePanelist(i)}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={p.name}
+                    onChange={(e) => updatePanelist(i, { name: e.target.value })}
+                    className="input"
+                    placeholder="Name"
+                  />
+                  <input
+                    type="email"
+                    value={p.email}
+                    onChange={(e) => updatePanelist(i, { email: e.target.value })}
+                    className="input"
+                    placeholder="Email"
+                  />
+                  <input
+                    type="text"
+                    value={p.titleByline}
+                    onChange={(e) => updatePanelist(i, { titleByline: e.target.value })}
+                    className="input"
+                    placeholder="Byline"
+                  />
+                  <input
+                    type="text"
+                    value={p.titleAreaOfExpertise}
+                    onChange={(e) => updatePanelist(i, { titleAreaOfExpertise: e.target.value })}
+                    className="input"
+                    placeholder="Area of expertise"
+                  />
+                  <input
+                    type="text"
+                    value={p.headshotUrl}
+                    onChange={(e) => updatePanelist(i, { headshotUrl: e.target.value })}
+                    className="input sm:col-span-2"
+                    placeholder="Headshot URL"
+                  />
+                  <textarea
+                    value={p.bio}
+                    onChange={(e) => updatePanelist(i, { bio: e.target.value })}
+                    className="input sm:col-span-2"
+                    rows={3}
+                    placeholder="Bio"
+                  />
+                  <input
+                    type="text"
+                    value={p.freeGiftTitle}
+                    onChange={(e) => updatePanelist(i, { freeGiftTitle: e.target.value })}
+                    className="input"
+                    placeholder="Free gift title"
+                  />
+                  <input
+                    type="text"
+                    value={p.freeGiftUrl}
+                    onChange={(e) => updatePanelist(i, { freeGiftUrl: e.target.value })}
+                    className="input"
+                    placeholder="Free gift URL"
+                  />
+                  <textarea
+                    value={p.freeGiftDescription}
+                    onChange={(e) => updatePanelist(i, { freeGiftDescription: e.target.value })}
+                    className="input sm:col-span-2"
+                    rows={2}
+                    placeholder="Free gift description"
+                  />
+                  <input
+                    type="text"
+                    value={p.vipGiftTitle}
+                    onChange={(e) => updatePanelist(i, { vipGiftTitle: e.target.value })}
+                    className="input"
+                    placeholder="VIP gift title (often arrives late)"
+                  />
+                  <input
+                    type="text"
+                    value={p.vipGiftUrl}
+                    onChange={(e) => updatePanelist(i, { vipGiftUrl: e.target.value })}
+                    className="input"
+                    placeholder="VIP gift URL"
+                  />
+                  <textarea
+                    value={p.vipGiftDescription}
+                    onChange={(e) => updatePanelist(i, { vipGiftDescription: e.target.value })}
+                    className="input sm:col-span-2"
+                    rows={2}
+                    placeholder="VIP gift description"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving || !form.titleOriginal || !form.eventDate}
+          className="w-full px-4 py-3 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+        >
+          {saving ? "Creating event..." : "Create event"}
+        </button>
       </form>
     </div>
   );

@@ -3,8 +3,8 @@ import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "Limitless Living Show",
-  description: "Transformation stories and coaching resources",
+  title: "Big Impact Experts",
+  description: "Big Impact Experts membership site",
 };
 
 export default function RootLayout({

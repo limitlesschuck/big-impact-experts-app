@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
-import { EpisodeGuidePDF } from "@/lib/episode-guide-pdf";
+import { PanelistGuidePDF } from "@/lib/episode-guide-pdf";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import React from "react";
 
@@ -16,12 +16,11 @@ const R2 = new S3Client({
   },
 });
 
-const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "limitless-living-media";
+const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "big-impact-experts-media";
 const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, "") ?? "";
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.limitlesslivingpodcast.com").replace(/\/$/, "");
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
@@ -29,39 +28,42 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const episode = await prisma.episode.findUnique({
-    where: { id: params.id },
-  });
-
-  if (!episode) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const { panelistId } = await req.json();
+  if (!panelistId) {
+    return NextResponse.json({ error: "panelistId is required" }, { status: 400 });
   }
 
-  if (!episode.guideBio && !episode.guideFrameworks) {
+  const panelist = await prisma.panelist.findFirst({
+    where: { id: panelistId, eventId: params.id },
+    include: { event: true },
+  });
+
+  if (!panelist) {
+    return NextResponse.json({ error: "Panelist not found on this event" }, { status: 404 });
+  }
+
+  if (!panelist.guideBio && !panelist.guideFrameworks) {
     return NextResponse.json(
-      { error: "Generate episode guide content first before creating the PDF" },
+      { error: "Generate the panelist guide content first before creating the PDF" },
       { status: 400 }
     );
   }
 
   try {
-    const pdfElement = React.createElement(EpisodeGuidePDF, {
-      showName: "Limitless Living Show",
-      episodeTitle: episode.titleYoutube ?? episode.titleOriginal,
-      episodeNumber: episode.episodeNumber,
-      guestName: episode.guestName,
-      guideBio: episode.guideBio ?? "",
-      guideFrameworks: episode.guideFrameworks ?? "",
-      guideTakeaways: episode.guideTakeaways ?? "",
-      guideQuotes: episode.guideQuotes ?? "",
-      guideActionItems: episode.guideActionItems ?? "",
-      assessmentUrl: `${APP_URL || "https://www.limitlesslivingpodcast.com"}/assessment`,
+    const pdfElement = React.createElement(PanelistGuidePDF, {
+      eventTitle: panelist.event.titleOriginal,
+      panelistName: panelist.name,
+      guideBio: panelist.guideBio ?? "",
+      guideFrameworks: panelist.guideFrameworks ?? "",
+      guideTakeaways: panelist.guideTakeaways ?? "",
+      guideQuotes: panelist.guideQuotes ?? "",
+      guideActionItems: panelist.guideActionItems ?? "",
     }) as unknown as React.ReactElement<DocumentProps>;
 
     const pdfBuffer = await renderToBuffer(pdfElement);
 
-    const slug = episode.slug ?? episode.id;
-    const filename = `episode-guides/${slug}-guide.pdf`;
+    const eventSlug = panelist.event.slug ?? panelist.event.id;
+    const filename = `panelist-guides/${eventSlug}-${panelist.id}-guide.pdf`;
 
     await R2.send(
       new PutObjectCommand({
@@ -74,8 +76,8 @@ export async function POST(
 
     const pdfUrl = `${PUBLIC_URL}/${filename}`;
 
-    await prisma.episode.update({
-      where: { id: episode.id },
+    await prisma.panelist.update({
+      where: { id: panelist.id },
       data: { guidePdfUrl: pdfUrl },
     });
 

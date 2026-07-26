@@ -1,13 +1,8 @@
 export function generateSlug(params: {
-  episodeNumber: number | null;
   titleYoutube: string | null;
   titleOriginal: string;
-  guestName: string | null;
+  eventDate: Date | string | null;
 }): string {
-  const num = params.episodeNumber
-    ? `ep-${params.episodeNumber}`
-    : null;
-
   const title = (params.titleYoutube ?? params.titleOriginal)
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -16,18 +11,14 @@ export function generateSlug(params: {
     .slice(0, 60)
     .replace(/-$/, "");
 
-  const guest = params.guestName
-    ? params.guestName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
-        .replace(/\s+/g, "-")
-        .slice(0, 30)
+  const date = params.eventDate
+    ? new Date(params.eventDate).toISOString().slice(0, 10)
     : null;
 
-  const parts = [num, title, guest].filter(Boolean);
+  const parts = [date, title].filter(Boolean);
   return parts.join("-");
 }
 
 export function isSlug(value: string): boolean {
-  return /^ep-\d+/.test(value) || value.includes("-");
+  return /^\d{4}-\d{2}-\d{2}-/.test(value) || value.includes("-");
 }

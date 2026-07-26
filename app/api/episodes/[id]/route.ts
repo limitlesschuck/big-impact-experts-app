@@ -7,17 +7,19 @@ export async function GET(
 ) {
   const { id } = params;
 
-  const episode = await prisma.episode.findFirst({
+  const event = await prisma.event.findFirst({
     where: {
       publishStatus: "published",
       OR: [{ id }, { slug: id }],
     },
-    include: { cta: true },
+    include: {
+      panelists: { include: { toolEntry: true } },
+    },
   });
 
-  if (!episode) {
+  if (!event) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(episode);
+  return NextResponse.json(event);
 }

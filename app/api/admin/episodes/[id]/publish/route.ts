@@ -4,66 +4,57 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-const MAKE_WEBHOOK_URL =
-  "https://hook.us2.make.com/026hpzp326lmlulqd6mx4asxfowkv4rf";
+const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL ?? "";
 
-function buildPayload(episode: {
+function buildPayload(event: {
   id: string;
-  episodeNumber: number | null;
-  captivatePublishedAt: Date | null;
-  guestName: string | null;
-  guestEmail: string | null;
-  affiliateLink: string | null;
-  swipeCopy: string | null;
-  systemeContactId: string | null;
+  eventDate: Date;
+  hostName: string | null;
+  recordingUrl: string | null;
+  giftPublicUntil: Date | null;
   titleOriginal: string;
   titleYoutube: string | null;
   titlePodcast: string | null;
   descriptionYoutube: string | null;
   descriptionWebsite: string | null;
-  descriptionOriginal: string | null;
-  captivateId: string | null;
   thumbnailUrl: string | null;
   coverArtUrl: string | null;
   youtubeThumbnailUrl: string | null;
   audioUrl: string | null;
   mp4Url: string | null;
   tags: string[];
-  crisisCategory: string | null;
+  panelists: {
+    id: string;
+    name: string;
+    email: string | null;
+    affiliateLink: string | null;
+    swipeCopy: string | null;
+  }[];
 }) {
-  const epNum = episode.episodeNumber;
-  const paddedNum = epNum ? String(epNum).padStart(3, "0") : null;
-  const folderHint =
-    paddedNum && episode.guestName
-      ? `LLS-${paddedNum} ${episode.guestName}`
-      : null;
-
   return {
-    episodeId: episode.id,
-    epNumber: epNum,
-    pubDate: episode.captivatePublishedAt
-      ? episode.captivatePublishedAt.toISOString().split("T")[0]
+    eventId: event.id,
+    eventDate: event.eventDate.toISOString().split("T")[0],
+    hostName: event.hostName,
+    title: event.titleYoutube ?? event.titleOriginal,
+    titlePodcast: event.titlePodcast,
+    desc: event.descriptionYoutube,
+    recordingUrl: event.recordingUrl,
+    giftPublicUntil: event.giftPublicUntil
+      ? event.giftPublicUntil.toISOString()
       : null,
-    guestName: episode.guestName,
-    guestEmail: episode.guestEmail,
-    affiliateLink: episode.affiliateLink,
-    swipeCopy: episode.swipeCopy,
-    systemeContactId: episode.systemeContactId,
-    title: episode.titleYoutube ?? episode.titleOriginal,
-    titlePodcast: episode.titlePodcast,
-    desc: episode.descriptionYoutube,
-    captivateId: episode.captivateId,
-    epUrl: episode.captivateId
-      ? `https://limitlesslivingpodcast.com/episode/${episode.captivateId}`
-      : null,
-    thumb: episode.youtubeThumbnailUrl ?? episode.thumbnailUrl,
-    coverArtUrl: episode.coverArtUrl ?? episode.thumbnailUrl,
-    showNotes: episode.descriptionWebsite,
-    keywords: episode.tags.join(", "),
-    mp4Url: episode.mp4Url,
-    mp4FolderHint: folderHint,
-    audioUrl: episode.audioUrl,
-    crisisCategory: episode.crisisCategory,
+    thumb: event.youtubeThumbnailUrl ?? event.thumbnailUrl,
+    coverArtUrl: event.coverArtUrl ?? event.thumbnailUrl,
+    showNotes: event.descriptionWebsite,
+    keywords: event.tags.join(", "),
+    mp4Url: event.mp4Url,
+    audioUrl: event.audioUrl,
+    panelists: event.panelists.map((p) => ({
+      id: p.id,
+      name: p.name,
+      email: p.email,
+      affiliateLink: p.affiliateLink,
+      swipeCopy: p.swipeCopy,
+    })),
     ytUploaded: "Queued",
   };
 }
@@ -80,40 +71,53 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const publishMode = body.publish === true;
 
-  const episode = await prisma.episode.findUnique({
+  const event = await prisma.event.findUnique({
     where: { id: params.id },
+    include: {
+      panelists: {
+        select: { id: true, name: true, email: true, affiliateLink: true, swipeCopy: true },
+      },
+    },
   });
 
-  if (!episode) {
+  if (!event) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (publishMode && episode.publishStatus !== "approved") {
+  if (publishMode && event.publishStatus !== "approved") {
     return NextResponse.json(
-      { error: "Episode must be in approved status before publishing" },
+      { error: "Event must be in approved status before publishing" },
       { status: 400 }
     );
   }
 
-  const payload = buildPayload(episode);
+  const payload = buildPayload(event);
 
   let webhookResult: { ok: boolean; status: number; body: string };
-  try {
-    const res = await fetch(MAKE_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const responseBody = await res.text();
-    webhookResult = { ok: res.ok, status: res.status, body: responseBody };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    webhookResult = { ok: false, status: 0, body: message };
+  if (!MAKE_WEBHOOK_URL) {
+    webhookResult = {
+      ok: false,
+      status: 0,
+      body: "MAKE_WEBHOOK_URL is not configured for this environment",
+    };
+  } else {
+    try {
+      const res = await fetch(MAKE_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const responseBody = await res.text();
+      webhookResult = { ok: res.ok, status: res.status, body: responseBody };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      webhookResult = { ok: false, status: 0, body: message };
+    }
   }
 
   await prisma.publishLog.create({
     data: {
-      episodeId: episode.id,
+      eventId: event.id,
       triggeredById: session.user.id,
       platform: publishMode ? "youtube" : "make_sync",
       status: webhookResult.ok ? "success" : "failed",
@@ -123,8 +127,8 @@ export async function POST(
   });
 
   if (publishMode && webhookResult.ok) {
-    await prisma.episode.update({
-      where: { id: episode.id },
+    await prisma.event.update({
+      where: { id: event.id },
       data: { publishStatus: "published", publishedAt: new Date() },
     });
   }
@@ -135,7 +139,7 @@ export async function POST(
     webhookResponse: webhookResult,
     message: webhookResult.ok
       ? publishMode
-        ? "Episode published — Make.com webhook fired successfully"
+        ? "Event published — Make.com webhook fired successfully"
         : "Sent to Make.com successfully"
       : `Webhook failed: ${webhookResult.body}`,
   });

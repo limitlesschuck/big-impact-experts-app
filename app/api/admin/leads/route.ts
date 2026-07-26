@@ -12,47 +12,22 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const resultType = searchParams.get("resultType");
-  const guideEpisodeId = searchParams.get("guideEpisodeId");
   const page = parseInt(searchParams.get("page") ?? "1");
   const format = searchParams.get("format");
   const limit = 50;
   const skip = (page - 1) * limit;
 
-  let emailsForGuide: string[] | null = null;
-  if (guideEpisodeId) {
-    const downloads = await prisma.guideDownload.findMany({
-      where: { episodeId: guideEpisodeId },
-      select: { email: true },
-      distinct: ["email"],
-    });
-    emailsForGuide = downloads.map((d) => d.email);
-  }
-
   const where = {
     ...(category ? { crisisCategory: category } : {}),
     ...(resultType ? { resultType } : {}),
-    ...(emailsForGuide ? { email: { in: emailsForGuide } } : {}),
   };
 
   if (format === "csv") {
     const leads = await prisma.lead.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: { sourceEpisode: { select: { titleOriginal: true } } },
+      include: { sourceEvent: { select: { titleOriginal: true } } },
     });
-
-    const emails = leads.map((l) => l.email);
-    const allDownloads = await prisma.guideDownload.findMany({
-      where: { email: { in: emails } },
-      include: { episode: { select: { titleOriginal: true, titleYoutube: true } } },
-    });
-    const downloadsByEmail = new Map<string, string[]>();
-    for (const d of allDownloads) {
-      const title = d.episode.titleYoutube ?? d.episode.titleOriginal;
-      const list = downloadsByEmail.get(d.email) ?? [];
-      list.push(title);
-      downloadsByEmail.set(d.email, list);
-    }
 
     const rows = [
       [
@@ -65,7 +40,7 @@ export async function GET(req: NextRequest) {
         "Score",
         "Result type",
         "Email synced",
-        "Source episode",
+        "Source event",
         "Guides downloaded",
       ].join(","),
       ...leads.map((l) =>
@@ -79,8 +54,8 @@ export async function GET(req: NextRequest) {
           l.score ?? "",
           l.resultType ?? "",
           l.emailSynced ? "Yes" : "No",
-          l.sourceEpisode?.titleOriginal ?? "",
-          (downloadsByEmail.get(l.email) ?? []).join("; "),
+          l.sourceEvent?.titleOriginal ?? "",
+          "Not tracked in Phase 1",
         ]
           .map((v) => `"${String(v).replace(/"/g, '""')}"`)
           .join(",")
@@ -90,7 +65,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(rows, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="lls-leads-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="bie-leads-${new Date().toISOString().split("T")[0]}.csv"`,
       },
     });
   }
@@ -102,37 +77,11 @@ export async function GET(req: NextRequest) {
       skip,
       take: limit,
       include: {
-        sourceEpisode: { select: { id: true, titleOriginal: true } },
+        sourceEvent: { select: { id: true, titleOriginal: true } },
       },
     }),
     prisma.lead.count({ where }),
   ]);
 
-  const leadEmails = leads.map((l) => l.email);
-  const guideDownloads = leadEmails.length
-    ? await prisma.guideDownload.findMany({
-        where: { email: { in: leadEmails } },
-        orderBy: { createdAt: "desc" },
-        include: { episode: { select: { id: true, titleOriginal: true, titleYoutube: true } } },
-      })
-    : [];
-
-  const downloadsByEmail = new Map<string, typeof guideDownloads>();
-  for (const d of guideDownloads) {
-    const list = downloadsByEmail.get(d.email) ?? [];
-    list.push(d);
-    downloadsByEmail.set(d.email, list);
-  }
-
-  const leadsWithDownloads = leads.map((lead) => ({
-    ...lead,
-    guideDownloads: (downloadsByEmail.get(lead.email) ?? []).map((d) => ({
-      id: d.id,
-      episodeId: d.episode.id,
-      episodeTitle: d.episode.titleYoutube ?? d.episode.titleOriginal,
-      createdAt: d.createdAt,
-    })),
-  }));
-
-  return NextResponse.json({ leads: leadsWithDownloads, total, page, limit });
+  return NextResponse.json({ leads, total, page, limit });
 }
