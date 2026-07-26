@@ -56,6 +56,7 @@ interface Event {
   recordingUrl: string | null;
   giftPublicUntil: string | null;
   transcriptRaw: string | null;
+  transcriptSegments: { status: string }[];
   panelists: Panelist[];
 }
 
@@ -460,12 +461,26 @@ export default function EventDetailPage() {
               />
             </Field>
             {event.transcriptRaw && (
-              <Link
-                href={`/admin/episodes/${event.id}/transcript`}
-                className="inline-block text-sm font-medium text-brand-purple hover:underline"
-              >
-                Review transcript segments →
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/admin/episodes/${event.id}/transcript`}
+                  className="text-sm font-medium text-brand-purple hover:underline"
+                >
+                  Review transcript segments →
+                </Link>
+                {event.transcriptSegments.length > 0 && (
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      event.transcriptSegments.every((s) => s.status !== "pending")
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {event.transcriptSegments.filter((s) => s.status !== "pending").length}/
+                    {event.transcriptSegments.length} segments reviewed
+                  </span>
+                )}
+              </div>
             )}
           </CollapsibleSection>
 

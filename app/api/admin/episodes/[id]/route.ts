@@ -24,6 +24,9 @@ export async function GET(
           },
         },
       },
+      transcriptSegments: {
+        select: { status: true },
+      },
     },
   });
 
