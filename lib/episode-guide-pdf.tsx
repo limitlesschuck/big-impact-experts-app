@@ -30,10 +30,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     marginBottom: 4,
   },
-  headerSubtitle: {
-    color: "#4ECDC4",
-    fontSize: 11,
-  },
   guideTitle: {
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
@@ -155,7 +151,6 @@ function parseLines(text: string): string[] {
 }
 
 interface PanelistGuidePDFProps {
-  eventTitle: string;
   panelistName: string;
   headshotUrl?: string | null;
   guideBio: string;
@@ -169,7 +164,6 @@ interface PanelistGuidePDFProps {
 }
 
 export function PanelistGuidePDF({
-  eventTitle,
   panelistName,
   headshotUrl,
   guideBio,
@@ -189,7 +183,6 @@ export function PanelistGuidePDF({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Big Impact Experts Success Guide</Text>
-          {eventTitle ? <Text style={styles.headerSubtitle}>{eventTitle}</Text> : null}
         </View>
 
         {/* Guide title */}

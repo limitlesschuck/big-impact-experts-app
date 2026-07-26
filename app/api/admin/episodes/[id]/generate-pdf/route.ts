@@ -51,7 +51,6 @@ export async function POST(
 
   try {
     const pdfElement = React.createElement(PanelistGuidePDF, {
-      eventTitle: panelist.event.titleOriginal,
       panelistName: panelist.name,
       headshotUrl: panelist.headshotUrl,
       guideBio: panelist.guideBio ?? "",
