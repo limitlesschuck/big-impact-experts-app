@@ -78,6 +78,7 @@ export default function EventDetailPage() {
   const [uploadingArt, setUploadingArt] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingTranscript, setUploadingTranscript] = useState(false);
+  const [uploadingHeadshotFor, setUploadingHeadshotFor] = useState<string | null>(null);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
   const [guideResults, setGuideResults] = useState<
@@ -312,6 +313,28 @@ export default function EventDetailPage() {
       setMessage({ type: "error", text: data.error ?? "Upload failed" });
     }
     setUploadingThumb(false);
+  }
+
+  async function handleHeadshotUpload(
+    panelistId: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingHeadshotFor(panelistId);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "panelist-headshots");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      updatePanelist(panelistId, { headshotUrl: data.url });
+      setMessage({ type: "success", text: "Headshot uploaded — save to apply" });
+    } else {
+      setMessage({ type: "error", text: data.error ?? "Upload failed" });
+    }
+    setUploadingHeadshotFor(null);
   }
 
   async function handleTranscriptUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -556,14 +579,6 @@ export default function EventDetailPage() {
                           className="input"
                         />
                       </Field>
-                      <Field label="Headshot URL">
-                        <input
-                          type="text"
-                          value={pf.headshotUrl ?? ""}
-                          onChange={(e) => updatePanelist(p.id, { headshotUrl: e.target.value })}
-                          className="input"
-                        />
-                      </Field>
                       <Field label="Affiliate link">
                         <input
                           type="text"
@@ -573,6 +588,51 @@ export default function EventDetailPage() {
                         />
                       </Field>
                     </div>
+                    <Field label="Headshot">
+                      {pf.headshotUrl ? (
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={pf.headshotUrl}
+                            alt={pf.name || "Headshot"}
+                            className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <input
+                              type="text"
+                              value={pf.headshotUrl}
+                              onChange={(e) => updatePanelist(p.id, { headshotUrl: e.target.value })}
+                              className="input text-xs"
+                            />
+                            <label className="inline-block text-xs text-brand-purple hover:underline cursor-pointer">
+                              {uploadingHeadshotFor === p.id ? "Uploading..." : "Replace headshot"}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(e) => handleHeadshotUpload(p.id, e)}
+                                className="hidden"
+                                disabled={uploadingHeadshotFor === p.id}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                          <div className="text-center">
+                            <p className="text-xs font-medium text-gray-600">
+                              {uploadingHeadshotFor === p.id ? "Uploading..." : "Click to upload headshot"}
+                            </p>
+                            <p className="text-xs text-gray-400">JPG, PNG, WebP</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={(e) => handleHeadshotUpload(p.id, e)}
+                            className="hidden"
+                            disabled={uploadingHeadshotFor === p.id}
+                          />
+                        </label>
+                      )}
+                    </Field>
                     <Field label="Bio">
                       <textarea
                         value={pf.bio ?? ""}
