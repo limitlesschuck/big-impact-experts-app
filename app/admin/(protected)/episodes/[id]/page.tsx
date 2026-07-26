@@ -459,6 +459,14 @@ export default function EventDetailPage() {
                 placeholder="No transcript uploaded yet"
               />
             </Field>
+            {event.transcriptRaw && (
+              <Link
+                href={`/admin/episodes/${event.id}/transcript`}
+                className="inline-block text-sm font-medium text-brand-purple hover:underline"
+              >
+                Review transcript segments →
+              </Link>
+            )}
           </CollapsibleSection>
 
           <div>

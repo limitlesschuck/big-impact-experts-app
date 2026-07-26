@@ -111,9 +111,10 @@ model Event {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  panelists   Panelist[]
-  leads       Lead[]
-  publishLogs PublishLog[]
+  panelists          Panelist[]
+  leads              Lead[]
+  publishLogs        PublishLog[]
+  transcriptSegments TranscriptSegment[]
 
   @@index([publishStatus])
   @@index([eventDate])
@@ -140,9 +141,10 @@ model Panelist {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  event     Event      @relation(fields: [eventId], references: [id])
-  toolEntry ToolEntry?
-  aiLogs    AiContentLog[]
+  event              Event               @relation(fields: [eventId], references: [id])
+  toolEntry          ToolEntry?
+  aiLogs             AiContentLog[]
+  transcriptSegments TranscriptSegment[]
 
   @@index([eventId])
 }
@@ -161,6 +163,31 @@ model ToolEntry {
   updatedAt                DateTime @updatedAt
 
   panelist Panelist @relation(fields: [panelistId], references: [id])
+}
+
+// ── Transcript attribution (Phase 1 Section 3) ────────────────────
+// Parsed VTT segments awaiting/having gone through the Admin Review
+// Screen. Only status = "approved" segments feed into
+// Panelist.transcriptSegment (and from there, AI guide generation).
+
+model TranscriptSegment {
+  id                String   @id @default(cuid())
+  eventId           String
+  order             Int
+  rawSpeakerLabel   String
+  text              String   @db.Text
+  matchedPanelistId String?
+  confidenceScore   Float?
+  isHostExcluded    Boolean  @default(false)
+  status            String   @default("pending") // pending | approved | rejected
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  event           Event     @relation(fields: [eventId], references: [id])
+  matchedPanelist Panelist? @relation(fields: [matchedPanelistId], references: [id])
+
+  @@index([eventId])
+  @@index([matchedPanelistId])
 }
 
 model Cta {
