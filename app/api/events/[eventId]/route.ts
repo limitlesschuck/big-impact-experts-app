@@ -3,14 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { eventId: string } }
 ) {
-  const { id } = params;
+  const { eventId } = params;
 
   const event = await prisma.event.findFirst({
     where: {
       publishStatus: "published",
-      OR: [{ id }, { slug: id }],
+      OR: [{ id: eventId }, { slug: eventId }],
     },
     include: {
       panelists: { include: { toolEntry: true } },

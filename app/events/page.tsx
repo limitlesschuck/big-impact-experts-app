@@ -34,7 +34,7 @@ export default async function EventsPage() {
             {events.map((ev) => (
               <Link
                 key={ev.id}
-                href={`/episodes/${ev.slug ?? ev.id}`}
+                href={`/events/${ev.slug ?? ev.id}`}
                 className="block border border-gray-200 rounded-lg p-4 hover:border-gray-400 transition-colors"
               >
                 <p className="text-sm font-medium text-gray-900">

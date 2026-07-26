@@ -20,9 +20,9 @@ async function getEvent(idOrSlug: string) {
 export default async function EventDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: { eventId: string };
 }) {
-  const event = await getEvent(params.id);
+  const event = await getEvent(params.eventId);
   if (!event) notFound();
 
   return (
