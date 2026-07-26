@@ -12,7 +12,7 @@ const R2 = new S3Client({
   },
 });
 
-const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "limitless-living-media";
+const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "big-impact-experts-media";
 const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, "") ?? "";
 
 export async function POST(req: NextRequest) {
