@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -62,6 +62,22 @@ interface Event {
 
 const STATUSES = ["draft", "ai_generated", "approved", "published"];
 
+// Guide generation is a single blocking Claude API call with no
+// real progress signal from the server -- this is a simulated
+// sequence timed to typical duration (~1-3 min), not literal backend
+// stage reporting. Settles on a reassuring tail message rather than
+// cycling if it runs long.
+const GUIDE_PROGRESS_MESSAGES = [
+  "Reading transcript...",
+  "Analyzing content...",
+  "Generating bio...",
+  "Generating frameworks & takeaways...",
+  "Generating quotes & action items...",
+  "Finalizing guide...",
+];
+const GUIDE_PROGRESS_STEP_MS = 12000;
+const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minutes...";
+
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
   return new Date(value).toISOString().slice(0, 10);
@@ -87,6 +103,8 @@ export default function EventDetailPage() {
   const [pdfResults, setPdfResults] = useState<
     Record<string, { type: "success" | "error"; text: string }>
   >({});
+  const [guideProgressFor, setGuideProgressFor] = useState<Record<string, string>>({});
+  const guideProgressTimers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -212,12 +230,42 @@ export default function EventDetailPage() {
     setSaving(false);
   }
 
+  function startGuideProgress(panelistId: string) {
+    let step = 0;
+    setGuideProgressFor((p) => ({ ...p, [panelistId]: GUIDE_PROGRESS_MESSAGES[0] }));
+    guideProgressTimers.current[panelistId] = setInterval(() => {
+      step += 1;
+      const nextMessage =
+        step < GUIDE_PROGRESS_MESSAGES.length
+          ? GUIDE_PROGRESS_MESSAGES[step]
+          : GUIDE_PROGRESS_TAIL_MESSAGE;
+      setGuideProgressFor((p) => ({ ...p, [panelistId]: nextMessage }));
+    }, GUIDE_PROGRESS_STEP_MS);
+  }
+
+  function stopGuideProgress(panelistId: string) {
+    clearInterval(guideProgressTimers.current[panelistId]);
+    delete guideProgressTimers.current[panelistId];
+    setGuideProgressFor((p) => {
+      const { [panelistId]: _, ...rest } = p;
+      return rest;
+    });
+  }
+
+  useEffect(() => {
+    const timers = guideProgressTimers.current;
+    return () => {
+      Object.values(timers).forEach(clearInterval);
+    };
+  }, []);
+
   async function handleGenerateGuide(panelistId: string) {
     setGeneratingGuideFor(panelistId);
     setGuideResults((r) => {
       const { [panelistId]: _, ...rest } = r;
       return rest;
     });
+    startGuideProgress(panelistId);
     const res = await fetch(
       `/api/admin/episodes/${id}/generate-guide`,
       {
@@ -246,6 +294,7 @@ export default function EventDetailPage() {
         [panelistId]: { type: "error", text: data.error ?? "Guide generation failed" },
       }));
     }
+    stopGuideProgress(panelistId);
     setGeneratingGuideFor(null);
   }
 
@@ -704,6 +753,11 @@ export default function EventDetailPage() {
                           </span>
                         </button>
                       </div>
+                      {guideProgressFor[p.id] && (
+                        <p className="text-xs text-gray-500 mb-2 italic">
+                          {guideProgressFor[p.id]}
+                        </p>
+                      )}
                       {guideResults[p.id] && (
                         <p
                           className={`text-xs mb-2 ${
