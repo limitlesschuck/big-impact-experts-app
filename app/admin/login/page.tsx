@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-gray-900">
-              Limitless Living
+              Big Impact Experts
             </h1>
             <p className="text-sm text-gray-500 mt-1">Admin dashboard</p>
           </div>
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                placeholder="admin@limitlesslivingshow.com"
+                placeholder="community@eventaffiliates.com"
               />
             </div>
 
