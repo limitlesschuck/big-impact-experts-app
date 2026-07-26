@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   },
   guideDivider: {
     height: 3,
-    backgroundColor: "#4ECDC4",
+    backgroundColor: "#F26522",
     marginBottom: 28,
     width: 60,
   },
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F26522",
   },
   bodyText: {
     fontSize: 10,
@@ -148,6 +148,23 @@ function parseLines(text: string): string[] {
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
+}
+
+// Collapses arbitrary, inconsistently-formatted source text (e.g. raw
+// Collab Pilot free gift descriptions, which vary wildly submitter to
+// submitter -- emoji-per-line, ALL-CAPS quoted blocks, stray line
+// breaks) into one clean flowing paragraph, dropping any line that's
+// nothing but a bullet/checkmark/emoji symbol.
+const SYMBOL_ONLY_LINE_RE = /^[\p{Extended_Pictographic}•✓✔\-*\s]+$/u;
+
+function normalizeToParagraph(text: string): string {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !SYMBOL_ONLY_LINE_RE.test(l))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 interface PanelistGuidePDFProps {
@@ -255,11 +272,11 @@ export function PanelistGuidePDF({
             <Text style={styles.sectionTitle}>Free Gift from {panelistName}</Text>
             <View style={styles.giftBox}>
               <Text style={styles.giftTitle}>{freeGiftTitle}</Text>
-              {freeGiftDescription
-                ? parseLines(freeGiftDescription).map((line, i) => (
-                    <Text key={i} style={styles.bodyText}>{line}</Text>
-                  ))
-                : null}
+              {freeGiftDescription ? (
+                <Text style={styles.bodyText}>
+                  {normalizeToParagraph(freeGiftDescription)}
+                </Text>
+              ) : null}
               {freeGiftUrl ? (
                 <Link src={freeGiftUrl} style={styles.giftLink}>
                   Get the free gift →

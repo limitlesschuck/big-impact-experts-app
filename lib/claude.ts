@@ -36,10 +36,10 @@ Panelist: ${params.panelistName}
 
 ${contentSource}
 
-Generate a structured guide and return ONLY valid JSON with no markdown, no code fences, no preamble:
+Generate a structured guide and return ONLY valid JSON with no markdown, no code fences, no preamble. Note: the source material above may be long -- that does not mean every field should be long. Follow each field's length limit exactly regardless of how much source content is available.
 
 {
-  "bio": "2-3 paragraph bio of the panelist covering who they are, their background, credentials, and what makes them uniquely qualified to speak on this topic. Write in third person. 150-200 words.",
+  "bio": "A SHORT bio of the panelist covering who they are, their background, credentials, and what makes them uniquely qualified to speak on this topic. Write in third person. HARD LIMIT: 120 words maximum, no exceptions. Extract only the 2-3 most compelling, credibility-establishing facts -- do not attempt to summarize everything available in the source material.",
   "frameworks": "The 2-4 most important frameworks, systems, or methodologies shared in this segment. For each one: give it a name, describe what it is in 2-3 sentences, explain how to apply it in 3-5 bullet points. Format as clear sections separated by double newlines.",
   "takeaways": "The 5-7 most powerful insights or lessons from this segment. Each takeaway should be 2-3 sentences that capture the idea and why it matters. Format as a numbered list.",
   "quotes": "The 5-8 most memorable, quotable, and actionable direct quotes from the panelist. Include only quotes that stand alone and deliver value without context. Format as a simple list with each quote on its own line starting with a quotation mark.",
