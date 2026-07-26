@@ -3,6 +3,8 @@ import {
   Page,
   Text,
   View,
+  Image,
+  Link,
   StyleSheet,
 } from "@react-pdf/renderer";
 
@@ -116,6 +118,41 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
     textAlign: "center",
   },
+  aboutRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  headshot: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 16,
+    marginTop: 24,
+  },
+  aboutBody: {
+    flex: 1,
+  },
+  giftBox: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 6,
+  },
+  giftTitle: {
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
+    color: "#1F1235",
+    marginBottom: 6,
+  },
+  giftLink: {
+    marginTop: 10,
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: "#2D1B69",
+    textDecoration: "none",
+  },
 });
 
 function parseLines(text: string): string[] {
@@ -128,21 +165,29 @@ function parseLines(text: string): string[] {
 interface PanelistGuidePDFProps {
   eventTitle: string;
   panelistName: string;
+  headshotUrl?: string | null;
   guideBio: string;
   guideFrameworks: string;
   guideTakeaways: string;
   guideQuotes: string;
   guideActionItems: string;
+  freeGiftTitle?: string | null;
+  freeGiftDescription?: string | null;
+  freeGiftUrl?: string | null;
 }
 
 export function PanelistGuidePDF({
   eventTitle,
   panelistName,
+  headshotUrl,
   guideBio,
   guideFrameworks,
   guideTakeaways,
   guideQuotes,
   guideActionItems,
+  freeGiftTitle,
+  freeGiftDescription,
+  freeGiftUrl,
 }: PanelistGuidePDFProps) {
   const guideTitle = `${panelistName} Guide`;
 
@@ -160,11 +205,14 @@ export function PanelistGuidePDF({
 
         {/* About the panelist */}
         {guideBio ? (
-          <View>
-            <Text style={styles.sectionTitle}>About {panelistName}</Text>
-            {parseLines(guideBio).map((line, i) => (
-              <Text key={i} style={styles.bodyText}>{line}</Text>
-            ))}
+          <View style={styles.aboutRow}>
+            {headshotUrl ? <Image src={headshotUrl} style={styles.headshot} /> : null}
+            <View style={styles.aboutBody}>
+              <Text style={styles.sectionTitle}>About {panelistName}</Text>
+              {parseLines(guideBio).map((line, i) => (
+                <Text key={i} style={styles.bodyText}>{line}</Text>
+              ))}
+            </View>
           </View>
         ) : null}
 
@@ -212,6 +260,26 @@ export function PanelistGuidePDF({
                 </Text>
               </View>
             ))}
+          </View>
+        ) : null}
+
+        {/* Free gift */}
+        {freeGiftTitle ? (
+          <View>
+            <Text style={styles.sectionTitle}>Free Gift from {panelistName}</Text>
+            <View style={styles.giftBox}>
+              <Text style={styles.giftTitle}>{freeGiftTitle}</Text>
+              {freeGiftDescription
+                ? parseLines(freeGiftDescription).map((line, i) => (
+                    <Text key={i} style={styles.bodyText}>{line}</Text>
+                  ))
+                : null}
+              {freeGiftUrl ? (
+                <Link src={freeGiftUrl} style={styles.giftLink}>
+                  Get the free gift →
+                </Link>
+              ) : null}
+            </View>
           </View>
         ) : null}
 

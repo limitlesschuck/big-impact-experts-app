@@ -35,7 +35,7 @@ export async function POST(
 
   const panelist = await prisma.panelist.findFirst({
     where: { id: panelistId, eventId: params.id },
-    include: { event: true },
+    include: { event: true, toolEntry: true },
   });
 
   if (!panelist) {
@@ -53,11 +53,15 @@ export async function POST(
     const pdfElement = React.createElement(PanelistGuidePDF, {
       eventTitle: panelist.event.titleOriginal,
       panelistName: panelist.name,
+      headshotUrl: panelist.headshotUrl,
       guideBio: panelist.guideBio ?? "",
       guideFrameworks: panelist.guideFrameworks ?? "",
       guideTakeaways: panelist.guideTakeaways ?? "",
       guideQuotes: panelist.guideQuotes ?? "",
       guideActionItems: panelist.guideActionItems ?? "",
+      freeGiftTitle: panelist.toolEntry?.freeGiftTitle,
+      freeGiftDescription: panelist.toolEntry?.freeGiftDescription,
+      freeGiftUrl: panelist.toolEntry?.freeGiftUrl,
     }) as unknown as React.ReactElement<DocumentProps>;
 
     const pdfBuffer = await renderToBuffer(pdfElement);
