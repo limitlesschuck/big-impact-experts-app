@@ -48,7 +48,6 @@ export default function NewEventPage() {
     eventDate: "",
     hostName: "Chuck Anderson",
     recordingUrl: "",
-    transcriptRaw: "",
   });
 
   const [panelists, setPanelists] = useState<PanelistForm[]>([emptyPanelist()]);
@@ -209,18 +208,6 @@ export default function NewEventPage() {
                 onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
                 className="input"
                 placeholder="Zoom/YouTube replay link"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                Transcript (raw)
-              </label>
-              <textarea
-                value={form.transcriptRaw}
-                onChange={(e) => setForm((f) => ({ ...f, transcriptRaw: e.target.value }))}
-                rows={8}
-                className="input font-mono text-xs"
-                placeholder="Paste the raw Zoom VTT export here"
               />
             </div>
           </div>

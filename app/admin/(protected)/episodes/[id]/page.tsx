@@ -55,6 +55,7 @@ interface Event {
   hostName: string | null;
   recordingUrl: string | null;
   giftPublicUntil: string | null;
+  transcriptRaw: string | null;
   panelists: Panelist[];
 }
 
@@ -75,6 +76,7 @@ export default function EventDetailPage() {
   const [testing, setTesting] = useState(false);
   const [uploadingArt, setUploadingArt] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [uploadingTranscript, setUploadingTranscript] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
   const [message, setMessage] = useState<{
@@ -100,6 +102,7 @@ export default function EventDetailPage() {
     hostName: "",
     recordingUrl: "",
     giftPublicUntil: "",
+    transcriptRaw: "",
   });
 
   const [panelistForms, setPanelistForms] = useState<Record<string, Panelist>>({});
@@ -124,6 +127,7 @@ export default function EventDetailPage() {
       hostName: data.hostName ?? "",
       recordingUrl: data.recordingUrl ?? "",
       giftPublicUntil: toDateInputValue(data.giftPublicUntil),
+      transcriptRaw: data.transcriptRaw ?? "",
     });
     setPanelistForms(
       Object.fromEntries((data.panelists ?? []).map((p) => [p.id, p]))
@@ -285,6 +289,17 @@ export default function EventDetailPage() {
     setUploadingThumb(false);
   }
 
+  async function handleTranscriptUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingTranscript(true);
+    const text = await file.text();
+    setForm((f) => ({ ...f, transcriptRaw: text }));
+    setMessage({ type: "success", text: "Transcript loaded — save to apply" });
+    setUploadingTranscript(false);
+  }
+
   async function handleSendToMake() {
     setTesting(true);
     setMessage(null);
@@ -408,6 +423,40 @@ export default function EventDetailPage() {
                 value={form.tags}
                 onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
                 className="input"
+              />
+            </Field>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Transcript" defaultOpen={false}>
+            <Field label="Transcript file (.vtt)">
+              <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                <div className="text-center">
+                  <p className="text-xs font-medium text-gray-600">
+                    {uploadingTranscript ? "Reading file..." : "Click to upload Zoom VTT transcript"}
+                  </p>
+                  <p className="text-xs text-gray-400">.vtt export</p>
+                </div>
+                <input
+                  type="file"
+                  accept=".vtt,text/vtt"
+                  onChange={handleTranscriptUpload}
+                  className="hidden"
+                  disabled={uploadingTranscript}
+                />
+              </label>
+            </Field>
+            {form.transcriptRaw && (
+              <p className="text-xs text-gray-500">
+                {form.transcriptRaw.length.toLocaleString()} characters loaded
+              </p>
+            )}
+            <Field label="Raw transcript (review/edit)">
+              <textarea
+                value={form.transcriptRaw}
+                onChange={(e) => setForm((f) => ({ ...f, transcriptRaw: e.target.value }))}
+                rows={8}
+                className="input font-mono text-xs"
+                placeholder="No transcript uploaded yet"
               />
             </Field>
           </CollapsibleSection>
