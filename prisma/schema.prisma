@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── NextAuth required tables ──────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Users (extends NextAuth User with role) ───────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("viewer")
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  publishLogs  PublishLog[]
+}
+
+// ── Core content tables ───────────────────────────────────────────
+
+model Episode {
+  id                    String    @id @default(cuid())
+  slug                  String?   @unique
+  captivateId           String?   @unique
+  youtubeId             String?
+  titleOriginal         String
+  titleYoutube          String?
+  titlePodcast          String?
+  descriptionOriginal   String?   @db.Text
+  descriptionYoutube    String?   @db.Text
+  descriptionWebsite    String?   @db.Text
+  transcript            String?   @db.Text
+  guestName             String?
+  guestBio              String?   @db.Text
+  guestEmail            String?
+  affiliateLink         String?
+  swipeCopy             String?   @db.Text
+  systemeContactId      String?
+  crisisCategory        String?
+  tags                  String[]
+  thumbnailUrl          String?
+  coverArtUrl           String?
+  youtubeThumbnailUrl   String?
+  audioUrl              String?
+  videoUrl              String?
+  mp4Url                String?
+  episodeNumber         Int?
+  riversideTitle        String?
+  riversideKeywords     String?   @db.Text
+  guideBio              String?   @db.Text
+  guideFrameworks       String?   @db.Text
+  guideTakeaways        String?   @db.Text
+  guideQuotes           String?   @db.Text
+  guideActionItems      String?   @db.Text
+  guidePdfUrl           String?
+  durationSeconds       Int?
+  publishStatus         String    @default("draft")
+  publishedAt           DateTime?
+  captivatePublishedAt  DateTime?
+  ctaId                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  cta         Cta?         @relation(fields: [ctaId], references: [id])
+  leads       Lead[]
+  publishLogs PublishLog[]
+  aiLogs         AiContentLog[]
+  guideDownloads GuideDownload[]
+
+  @@index([crisisCategory])
+  @@index([publishStatus])
+}
+
+model Cta {
+  id              String   @id @default(cuid())
+  crisisCategory  String   @unique
+  headline        String
+  subtext         String?
+  buttonLabel     String
+  assessmentEntry Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  episodes Episode[]
+}
+
+// ── Assessment + lead funnel tables ──────────────────────────────
+
+model Lead {
+  id              String    @id @default(cuid())
+  email           String
+  firstName       String?
+  crisisCategory  String
+  crisisDuration  String?
+  urgency         String?
+  score           Int?
+  resultType      String?
+  sourceEpisodeId String?
+  affiliateRouteId String?
+  coachId         String?
+  emailSynced     Boolean   @default(false)
+  ipAddress       String?
+  createdAt       DateTime  @default(now())
+
+  sourceEpisode  Episode?       @relation(fields: [sourceEpisodeId], references: [id])
+  affiliateRoute AffiliateRoute? @relation(fields: [affiliateRouteId], references: [id])
+  coach          Coach?          @relation(fields: [coachId], references: [id])
+
+  @@index([email])
+  @@index([crisisCategory])
+  @@index([urgency])
+}
+
+model GuideDownload {
+  id          String   @id @default(cuid())
+  email       String
+  firstName   String?
+  episodeId   String
+  createdAt   DateTime @default(now())
+
+  episode Episode @relation(fields: [episodeId], references: [id])
+
+  @@index([email])
+  @@index([episodeId])
+}
+
+model AffiliateRoute {
+  id              String   @id @default(cuid())
+  crisisCategory  String
+  urgencyLevel    String
+  affiliateName   String
+  affiliateUrl    String   @db.Text
+  priority        Int      @default(1)
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  leads Lead[]
+}
+
+model Coach {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  bio              String?  @db.Text
+  specialties      String[]
+  urgencyLevels    String[]
+  profileUrl       String?
+  photoUrl         String?
+  referralFeeType  String?
+  referralFeeValue Decimal? @db.Decimal(10, 2)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  leads Lead[]
+}
+
+// ── Operations tables ─────────────────────────────────────────────
+
+model PublishLog {
+  id             String   @id @default(cuid())
+  episodeId      String
+  triggeredById  String?
+  platform       String
+  status         String   @default("pending")
+  webhookPayload Json?
+  responseBody   Json?
+  createdAt      DateTime @default(now())
+
+  episode     Episode @relation(fields: [episodeId], references: [id])
+  triggeredBy User?   @relation(fields: [triggeredById], references: [id])
+}
+
+model SiteConfig {
+  id        String   @id @default(cuid())
+  config    Json
+  updatedAt DateTime @updatedAt
+}
+
+model AssessmentConfig {
+  id        String   @id @default(cuid())
+  config    Json
+  updatedAt DateTime @updatedAt
+}
+
+model AiContentLog {
+  id          String   @id @default(cuid())
+  episodeId   String?
+  provider    String
+  contentType String
+  prompt      String   @db.Text
+  output      String   @db.Text
+  tokensUsed  Int?
+  approved    Boolean?
+  createdAt   DateTime @default(now())
+
+  episode Episode? @relation(fields: [episodeId], references: [id])
+}
