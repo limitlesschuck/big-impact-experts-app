@@ -80,6 +80,12 @@ export default function EventDetailPage() {
   const [uploadingTranscript, setUploadingTranscript] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
+  const [guideResults, setGuideResults] = useState<
+    Record<string, { type: "success" | "error"; text: string }>
+  >({});
+  const [pdfResults, setPdfResults] = useState<
+    Record<string, { type: "success" | "error"; text: string }>
+  >({});
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -207,7 +213,10 @@ export default function EventDetailPage() {
 
   async function handleGenerateGuide(panelistId: string) {
     setGeneratingGuideFor(panelistId);
-    setMessage(null);
+    setGuideResults((r) => {
+      const { [panelistId]: _, ...rest } = r;
+      return rest;
+    });
     const res = await fetch(
       `/api/admin/episodes/${id}/generate-guide`,
       {
@@ -226,16 +235,25 @@ export default function EventDetailPage() {
         guideActionItems: data.generated.actionItems ?? "",
         guidePdfUrl: "",
       });
-      setMessage({ type: "success", text: "Guide generated — review and save" });
+      setGuideResults((r) => ({
+        ...r,
+        [panelistId]: { type: "success", text: "Guide generated — review and save" },
+      }));
     } else {
-      setMessage({ type: "error", text: data.error ?? "Guide generation failed" });
+      setGuideResults((r) => ({
+        ...r,
+        [panelistId]: { type: "error", text: data.error ?? "Guide generation failed" },
+      }));
     }
     setGeneratingGuideFor(null);
   }
 
   async function handleGeneratePdf(panelistId: string) {
     setGeneratingPdfFor(panelistId);
-    setMessage(null);
+    setPdfResults((r) => {
+      const { [panelistId]: _, ...rest } = r;
+      return rest;
+    });
     const res = await fetch(
       `/api/admin/episodes/${id}/generate-pdf`,
       {
@@ -247,9 +265,15 @@ export default function EventDetailPage() {
     const data = await res.json();
     if (res.ok && data.pdfUrl) {
       updatePanelist(panelistId, { guidePdfUrl: data.pdfUrl });
-      setMessage({ type: "success", text: "PDF generated and stored" });
+      setPdfResults((r) => ({
+        ...r,
+        [panelistId]: { type: "success", text: "PDF generated and stored" },
+      }));
     } else {
-      setMessage({ type: "error", text: data.error ?? "PDF generation failed" });
+      setPdfResults((r) => ({
+        ...r,
+        [panelistId]: { type: "error", text: data.error ?? "PDF generation failed" },
+      }));
     }
     setGeneratingPdfFor(null);
   }
@@ -596,14 +620,17 @@ export default function EventDetailPage() {
                     </div>
 
                     <div className="pt-2 border-t border-gray-100">
-                      <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                      <div className="flex flex-col sm:flex-row gap-2 mb-2">
                         <button
                           type="button"
                           onClick={() => handleGenerateGuide(p.id)}
                           disabled={generatingGuideFor === p.id}
                           className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
                         >
-                          {generatingGuideFor === p.id ? "Generating..." : "Generate guide"}
+                          <span className="flex items-center justify-center gap-2">
+                            {generatingGuideFor === p.id && <Spinner />}
+                            {generatingGuideFor === p.id ? "Generating..." : "Generate guide"}
+                          </span>
                         </button>
                         <button
                           type="button"
@@ -611,9 +638,30 @@ export default function EventDetailPage() {
                           disabled={generatingPdfFor === p.id || !pf.guideBio}
                           className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
                         >
-                          {generatingPdfFor === p.id ? "Generating PDF..." : "Generate PDF"}
+                          <span className="flex items-center justify-center gap-2">
+                            {generatingPdfFor === p.id && <Spinner />}
+                            {generatingPdfFor === p.id ? "Generating PDF..." : "Generate PDF"}
+                          </span>
                         </button>
                       </div>
+                      {guideResults[p.id] && (
+                        <p
+                          className={`text-xs mb-2 ${
+                            guideResults[p.id].type === "success" ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {guideResults[p.id].text}
+                        </p>
+                      )}
+                      {pdfResults[p.id] && (
+                        <p
+                          className={`text-xs mb-2 ${
+                            pdfResults[p.id].type === "success" ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {pdfResults[p.id].text}
+                        </p>
+                      )}
                       {pf.guidePdfUrl && (
                         <a
                           href={pf.guidePdfUrl}
@@ -955,5 +1003,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
       {children}
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
   );
 }
