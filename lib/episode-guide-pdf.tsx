@@ -10,27 +10,19 @@ import {
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F7F8FC",
     paddingTop: 48,
     paddingBottom: 48,
     paddingHorizontal: 48,
     fontFamily: "Helvetica",
   },
   header: {
-    backgroundColor: "#2D1B69",
+    backgroundColor: "#0944B9",
     marginHorizontal: -48,
     marginTop: -48,
     paddingHorizontal: 48,
     paddingVertical: 28,
     marginBottom: 32,
-  },
-  showName: {
-    color: "#F0A500",
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-    letterSpacing: 2,
-    marginBottom: 4,
   },
   headerTitle: {
     color: "#FFFFFF",
@@ -39,25 +31,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerSubtitle: {
-    color: "#C4B5FD",
+    color: "#4ECDC4",
     fontSize: 11,
   },
   guideTitle: {
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
-    color: "#1F1235",
+    color: "#1E3A5F",
     marginBottom: 4,
   },
   guideDivider: {
     height: 3,
-    backgroundColor: "#F0A500",
+    backgroundColor: "#4ECDC4",
     marginBottom: 28,
     width: 60,
   },
   sectionTitle: {
     fontSize: 14,
     fontFamily: "Helvetica-Bold",
-    color: "#2D1B69",
+    color: "#1E3A5F",
     marginBottom: 10,
     marginTop: 24,
     paddingBottom: 4,
@@ -85,7 +77,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Oblique",
     paddingLeft: 12,
     borderLeftWidth: 2,
-    borderLeftColor: "#F0A500",
+    borderLeftColor: "#4ECDC4",
   },
   actionItem: {
     fontSize: 10,
@@ -135,22 +127,22 @@ const styles = StyleSheet.create({
   giftBox: {
     marginTop: 12,
     padding: 16,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F26522",
     borderRadius: 6,
   },
   giftTitle: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
-    color: "#1F1235",
+    color: "#1E3A5F",
     marginBottom: 6,
   },
   giftLink: {
     marginTop: 10,
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#2D1B69",
+    color: "#F26522",
     textDecoration: "none",
   },
 });
@@ -196,7 +188,8 @@ export function PanelistGuidePDF({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{eventTitle}</Text>
+          <Text style={styles.headerTitle}>Big Impact Experts Success Guide</Text>
+          {eventTitle ? <Text style={styles.headerSubtitle}>{eventTitle}</Text> : null}
         </View>
 
         {/* Guide title */}
@@ -286,7 +279,7 @@ export function PanelistGuidePDF({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            © {new Date().getFullYear()} {eventTitle}
+            © {new Date().getFullYear()} BigImpactExperts.com
           </Text>
         </View>
       </Page>
