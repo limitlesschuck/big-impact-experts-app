@@ -180,10 +180,10 @@ export default function NewEventPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                Event date <span className="text-red-400">*</span>
+                Event date & time <span className="text-red-400">*</span>
               </label>
               <input
-                type="date"
+                type="datetime-local"
                 value={form.eventDate}
                 onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
                 className="input"

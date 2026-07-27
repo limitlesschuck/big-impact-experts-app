@@ -47,3 +47,43 @@ export async function getPublicEvent(idOrSlug: string) {
 }
 
 export type PublicEvent = NonNullable<Awaited<ReturnType<typeof getPublicEvent>>>;
+
+// Separate from getPublicEvent -- deliberately not shared, since the
+// shape genuinely differs: this needs panelist titles/hostNote for
+// the registration page and has no reason to touch ToolEntry/gift
+// data at all. Not gated on publishStatus: that field describes the
+// post-event AI-content pipeline (draft -> ai_generated -> approved
+// -> published), an unrelated concern to "is this event open for
+// registration" -- an upcoming event being set up wouldn't have been
+// through that pipeline yet. Visibility is controlled by the admin
+// choosing who gets the link.
+export async function getPublicEventForRegistration(idOrSlug: string) {
+  return prisma.event.findFirst({
+    where: {
+      OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+    },
+    select: {
+      id: true,
+      slug: true,
+      titleOriginal: true,
+      titleYoutube: true,
+      descriptionWebsite: true,
+      eventDate: true,
+      hostName: true,
+      hostNote: true,
+      panelists: {
+        select: {
+          id: true,
+          name: true,
+          titleByline: true,
+          titleAreaOfExpertise: true,
+          headshotUrl: true,
+        },
+      },
+    },
+  });
+}
+
+export type PublicEventForRegistration = NonNullable<
+  Awaited<ReturnType<typeof getPublicEventForRegistration>>
+>;

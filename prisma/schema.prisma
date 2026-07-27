@@ -89,6 +89,7 @@ model Event {
   hostName            String?
   recordingUrl        String?
   giftPublicUntil     DateTime?
+  hostNote            String?   @db.Text
   transcriptRaw       String?   @db.Text
   transcriptCleaned   String?   @db.Text
   youtubeId           String?
@@ -115,9 +116,29 @@ model Event {
   leads              Lead[]
   publishLogs        PublishLog[]
   transcriptSegments TranscriptSegment[]
+  registrations      Registration[]
 
   @@index([publishStatus])
   @@index([eventDate])
+}
+
+// ── In-app event registration (replaces the Systeme.io funnel) ────
+// The outbound Systeme.io sync is a separately planned task; emailSynced
+// marks rows that task should pick up, matching the same convention
+// already used on Lead.emailSynced.
+
+model Registration {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  email       String
+  emailSynced Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([email])
 }
 
 model Panelist {

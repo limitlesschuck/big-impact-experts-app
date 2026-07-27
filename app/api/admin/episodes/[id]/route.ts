@@ -27,6 +27,10 @@ export async function GET(
       transcriptSegments: {
         select: { status: true },
       },
+      registrations: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, email: true, createdAt: true },
+      },
     },
   });
 
@@ -58,6 +62,7 @@ const EVENT_ALLOWED = [
   "hostName",
   "recordingUrl",
   "giftPublicUntil",
+  "hostNote",
   "transcriptRaw",
   "transcriptCleaned",
 ];

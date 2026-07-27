@@ -55,8 +55,10 @@ interface Event {
   hostName: string | null;
   recordingUrl: string | null;
   giftPublicUntil: string | null;
+  hostNote: string | null;
   transcriptRaw: string | null;
   transcriptSegments: { status: string }[];
+  registrations: { id: string; name: string; email: string; createdAt: string }[];
   panelists: Panelist[];
 }
 
@@ -81,6 +83,11 @@ const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minut
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
   return new Date(value).toISOString().slice(0, 10);
+}
+
+function toDateTimeInputValue(value: string | null): string {
+  if (!value) return "";
+  return new Date(value).toISOString().slice(0, 16);
 }
 
 export default function EventDetailPage() {
@@ -128,6 +135,7 @@ export default function EventDetailPage() {
     hostName: "",
     recordingUrl: "",
     giftPublicUntil: "",
+    hostNote: "",
     transcriptRaw: "",
   });
 
@@ -149,10 +157,11 @@ export default function EventDetailPage() {
       coverArtUrl: data.coverArtUrl ?? "",
       youtubeThumbnailUrl: data.youtubeThumbnailUrl ?? "",
       slug: data.slug ?? "",
-      eventDate: toDateInputValue(data.eventDate),
+      eventDate: toDateTimeInputValue(data.eventDate),
       hostName: data.hostName ?? "",
       recordingUrl: data.recordingUrl ?? "",
       giftPublicUntil: toDateInputValue(data.giftPublicUntil),
+      hostNote: data.hostNote ?? "",
       transcriptRaw: data.transcriptRaw ?? "",
     });
     setPanelistForms(
@@ -842,9 +851,9 @@ export default function EventDetailPage() {
 
         <div className="space-y-6">
           <CollapsibleSection title="Publishing" defaultOpen={true}>
-            <Field label="Event date">
+            <Field label="Event date & time">
               <input
-                type="date"
+                type="datetime-local"
                 value={form.eventDate}
                 onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
                 className="input"
@@ -864,6 +873,15 @@ export default function EventDetailPage() {
                 value={form.recordingUrl}
                 onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
                 className="input"
+              />
+            </Field>
+            <Field label="Note from the host">
+              <textarea
+                value={form.hostNote}
+                onChange={(e) => setForm((f) => ({ ...f, hostNote: e.target.value }))}
+                rows={4}
+                className="input"
+                placeholder="Shown on the registration page"
               />
             </Field>
             <Field label="Free gifts public until">
@@ -1031,6 +1049,33 @@ export default function EventDetailPage() {
                   Your browser does not support audio.
                 </audio>
               </Field>
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Registrants"
+            subtitle={`${event.registrations.length} registered`}
+            defaultOpen={false}
+          >
+            {event.registrations.length === 0 ? (
+              <p className="text-xs text-gray-400">No registrations yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {event.registrations.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between text-xs border-b border-gray-100 pb-2"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{r.name}</p>
+                      <p className="text-gray-500">{r.email}</p>
+                    </div>
+                    <p className="text-gray-400 shrink-0 ml-2">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
             )}
           </CollapsibleSection>
 

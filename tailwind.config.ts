@@ -16,6 +16,13 @@ const config: Config = {
           gold: "#F0A500",
           "gold-light": "#F5C842",
           "gold-dark": "#C8860A",
+          // Big Impact Experts palette (replaces the above on new
+          // surfaces -- purple/gold above is inherited fork branding,
+          // still used by not-yet-migrated pages like SiteHeader).
+          navy: "#0944B9",
+          orange: "#F26522",
+          teal: "#4ECDC4",
+          bg: "#F7F8FC",
         },
       },
       fontFamily: {
