@@ -60,6 +60,7 @@ interface Event {
   giftPublicUntil: string | null;
   hostNote: string | null;
   hostBio: string | null;
+  heroSubheading: string | null;
   registrationHeading: string | null;
   registrationSubheading: string | null;
   transcriptRaw: string | null;
@@ -148,6 +149,7 @@ export default function EventDetailPage() {
     giftPublicUntil: "",
     hostNote: "",
     hostBio: "",
+    heroSubheading: "",
     registrationHeading: "",
     registrationSubheading: "",
     transcriptRaw: "",
@@ -180,6 +182,7 @@ export default function EventDetailPage() {
       giftPublicUntil: toDateInputValue(data.giftPublicUntil),
       hostNote: data.hostNote ?? "",
       hostBio: data.hostBio ?? "",
+      heroSubheading: data.heroSubheading ?? "",
       registrationHeading: data.registrationHeading ?? "",
       registrationSubheading: data.registrationSubheading ?? "",
       transcriptRaw: data.transcriptRaw ?? "",
@@ -1052,6 +1055,15 @@ export default function EventDetailPage() {
                 value={form.recordingUrl}
                 onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
                 className="input"
+              />
+            </Field>
+            <Field label="Hero subheading">
+              <textarea
+                value={form.heroSubheading}
+                onChange={(e) => setForm((f) => ({ ...f, heroSubheading: e.target.value }))}
+                rows={2}
+                className="input"
+                placeholder="Hero subheading on /register"
               />
             </Field>
             <Field label="Registration page heading">

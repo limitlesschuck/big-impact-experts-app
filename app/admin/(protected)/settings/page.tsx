@@ -490,6 +490,15 @@ export default function SettingsPage() {
             onChange={(v) => updateText("heroEyebrowPrefix", v)}
           />
           <TextField
+            label="Default subheading"
+            value={registerPage.text.defaultHeroSubheading}
+            onChange={(v) => updateText("defaultHeroSubheading", v)}
+            multiline
+          />
+          <p className="text-xs text-gray-400">
+            Used only when an event doesn&rsquo;t set its own hero subheading.
+          </p>
+          <TextField
             label="CTA button label"
             value={registerPage.text.heroCtaButton}
             onChange={(v) => updateText("heroCtaButton", v)}

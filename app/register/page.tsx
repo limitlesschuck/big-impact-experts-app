@@ -99,6 +99,7 @@ export default async function RegisterPage() {
   const hostName = orDefault(event.hostName, "Chuck Anderson");
   const hostTitle = orDefault(event.hostTitle, "Affiliate Management Expert");
   const heroTitle = orDefault(event.titleYoutube, event.titleOriginal);
+  const heroSubheading = orDefault(event.heroSubheading, t.defaultHeroSubheading);
   const heading = orDefault(event.registrationHeading, t.defaultRegistrationHeading);
   const subheading = orDefault(event.registrationSubheading, t.defaultRegistrationSubheading);
 
@@ -115,11 +116,9 @@ export default async function RegisterPage() {
           <h1 className="rp-hero-title font-bold text-white leading-tight mb-6">
             {renderEmphasizedTitle(heroTitle)}
           </h1>
-          {event.descriptionWebsite && (
-            <p className="rp-hero-subtitle text-white/70 max-w-2xl mx-auto mb-14">
-              {event.descriptionWebsite}
-            </p>
-          )}
+          <p className="rp-hero-subtitle text-white/70 max-w-2xl mx-auto mb-14">
+            {heroSubheading}
+          </p>
 
           <div className="mb-12">
             <CountdownBar

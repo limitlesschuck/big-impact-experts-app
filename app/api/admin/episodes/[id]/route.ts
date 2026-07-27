@@ -67,6 +67,7 @@ const EVENT_ALLOWED = [
   "giftPublicUntil",
   "hostNote",
   "hostBio",
+  "heroSubheading",
   "registrationHeading",
   "registrationSubheading",
   "transcriptRaw",

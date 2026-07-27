@@ -48,6 +48,7 @@ export interface RegisterPageConfig {
     finalCtaSmallPrintSuffix: string;
     footerText: string;
     nothingScheduledMessage: string;
+    defaultHeroSubheading: string;
     defaultRegistrationHeading: string;
     defaultRegistrationSubheading: string;
     countdownDayLabel: string;
@@ -95,6 +96,8 @@ export const DEFAULT_REGISTER_PAGE_CONFIG: RegisterPageConfig = {
     finalCtaSmallPrintSuffix: "Free to attend",
     footerText: "BigImpactExperts.com",
     nothingScheduledMessage: "Nothing scheduled right now — check back soon.",
+    defaultHeroSubheading:
+      "Join us live for an actionable session packed with strategies you can apply immediately.",
     defaultRegistrationHeading: "Ready to Grow Your Impact, Influence, and Income?",
     defaultRegistrationSubheading:
       "YES! I Want To Attend This Free Event With Chuck Anderson & Learn How To Make A Bigger Impact, Grow My Influence, And Earn More Profit — From 6 Industry Experts In Just 90 Minutes!",

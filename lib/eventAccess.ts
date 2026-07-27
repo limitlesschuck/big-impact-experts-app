@@ -62,7 +62,6 @@ const REGISTRATION_EVENT_SELECT = {
   slug: true,
   titleOriginal: true,
   titleYoutube: true,
-  descriptionWebsite: true,
   eventDate: true,
   hostName: true,
   hostTitle: true,
@@ -70,6 +69,7 @@ const REGISTRATION_EVENT_SELECT = {
   hostPhotoUrl: true,
   hostNote: true,
   hostBio: true,
+  heroSubheading: true,
   registrationHeading: true,
   registrationSubheading: true,
   panelists: {

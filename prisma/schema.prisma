@@ -94,6 +94,7 @@ model Event {
   giftPublicUntil        DateTime?
   hostNote               String?   @db.Text
   hostBio                String?   @db.Text
+  heroSubheading         String?   @db.Text
   registrationHeading    String?
   registrationSubheading String?   @db.Text
   transcriptRaw          String?   @db.Text
