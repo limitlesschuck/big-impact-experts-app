@@ -35,6 +35,9 @@ export interface RegisterPageConfig {
     countdownLabel: ResponsiveSize;
     formInput: string;
   };
+  sizes: {
+    cardHeadshot: ResponsiveSize;
+  };
   text: {
     heroEyebrowPrefix: string;
     heroCtaButton: string;
@@ -82,6 +85,9 @@ export const DEFAULT_REGISTER_PAGE_CONFIG: RegisterPageConfig = {
     countdownDigit: { base: "2.25rem", sm: "3rem", lg: "3.75rem" },
     countdownLabel: { base: "0.75rem", sm: "0.875rem", lg: "0.875rem" },
     formInput: "1rem",
+  },
+  sizes: {
+    cardHeadshot: { base: "7rem", sm: "8rem", lg: "8rem" },
   },
   text: {
     heroEyebrowPrefix: "Free Live Event —",
@@ -161,8 +167,16 @@ export function buildRegisterPageCss(config: RegisterPageConfig): string {
     @media (min-width: 1024px) { .${className} { ${property}: ${size(value.lg, fallback.lg)}; } }
   `;
 
+  const responsiveBox = (className: string, value: ResponsiveSize, fallback: ResponsiveSize) => `
+    .${className} { width: ${size(value.base, fallback.base)}; height: ${size(value.base, fallback.base)}; }
+    @media (min-width: 640px) { .${className} { width: ${size(value.sm, fallback.sm)}; height: ${size(value.sm, fallback.sm)}; } }
+    @media (min-width: 1024px) { .${className} { width: ${size(value.lg, fallback.lg)}; height: ${size(value.lg, fallback.lg)}; } }
+  `;
+
   const f = config.fontSizes;
   const fd = d.fontSizes;
+  const s = config.sizes;
+  const sd = d.sizes;
 
   return `
     .rp-navy { color: ${c.navy}; }
@@ -179,6 +193,7 @@ export function buildRegisterPageCss(config: RegisterPageConfig): string {
     ${responsive("rp-host-note-body", "font-size", f.hostNoteBody, fd.hostNoteBody)}
     ${responsive("rp-countdown-digit", "font-size", f.countdownDigit, fd.countdownDigit)}
     ${responsive("rp-countdown-label", "font-size", f.countdownLabel, fd.countdownLabel)}
+    ${responsiveBox("rp-card-headshot", s.cardHeadshot, sd.cardHeadshot)}
 
     .rp-section-subhead { font-size: ${size(f.sectionSubhead, fd.sectionSubhead)}; }
     .rp-card-name { font-size: ${size(f.cardName, fd.cardName)}; }

@@ -205,6 +205,13 @@ export default function SettingsPage() {
     setRegisterPage((prev) => ({ ...prev, text: { ...prev.text, [key]: value } }));
   }
 
+  function updateSize<K extends keyof RegisterPageConfig["sizes"]>(
+    key: K,
+    value: RegisterPageConfig["sizes"][K]
+  ) {
+    setRegisterPage((prev) => ({ ...prev, sizes: { ...prev.sizes, [key]: value } }));
+  }
+
   const [dataToolsOpen, setDataToolsOpen] = useState(false);
   const [confirmTool, setConfirmTool] = useState<DataTool>(null);
   const [generatingSlugs, setGeneratingSlugs] = useState(false);
@@ -346,8 +353,8 @@ export default function SettingsPage() {
       </Section>
 
       <Section
-        title="Register Page — Font Sizes"
-        subtitle="Each setting applies everywhere that text role appears on the page."
+        title="Register Page — Font Sizes & Element Sizing"
+        subtitle="Each setting applies everywhere that role appears on the page."
       >
         <div>
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
@@ -418,6 +425,11 @@ export default function SettingsPage() {
             label="Expert bio"
             value={registerPage.fontSizes.cardBio}
             onChange={(v) => updateFontSize("cardBio", v)}
+          />
+          <ResponsiveSizeField
+            label="Headshot size (diameter)"
+            value={registerPage.sizes.cardHeadshot}
+            onChange={(v) => updateSize("cardHeadshot", v)}
           />
         </div>
 

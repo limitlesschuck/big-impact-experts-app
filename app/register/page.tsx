@@ -67,10 +67,10 @@ function ExpertCard({
         <img
           src={headshotUrl}
           alt={name}
-          className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover mx-auto mb-4 border border-gray-200"
+          className="rp-card-headshot rounded-full object-cover mx-auto mb-4 border border-gray-200"
         />
       ) : (
-        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gray-100 mx-auto mb-4" />
+        <div className="rp-card-headshot rounded-full bg-gray-100 mx-auto mb-4" />
       )}
       <p className="rp-card-name font-bold text-gray-900">{name}</p>
       {title && <p className="rp-card-title rp-orange capitalize mt-1">{title}</p>}
