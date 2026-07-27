@@ -175,8 +175,8 @@ export default async function RegisterPage() {
       {/* Note From Your Host */}
       {event.hostNote && (
         <div className="bg-white border-t border-gray-100">
-          <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-20 sm:py-24 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
-            <div className="lg:col-span-3">
+          <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
+            <div className="lg:col-span-3 pb-20 sm:pb-24">
               <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4">
                 {t.hostNoteEyebrow}
               </p>
@@ -195,7 +195,7 @@ export default async function RegisterPage() {
               </p>
             </div>
             {event.hostPhotoUrl && (
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 self-end">
                 <img
                   src={event.hostPhotoUrl}
                   alt={hostName}
