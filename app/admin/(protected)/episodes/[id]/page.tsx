@@ -63,6 +63,7 @@ interface Event {
   heroSubheading: string | null;
   registrationHeading: string | null;
   registrationSubheading: string | null;
+  surveyUrl: string | null;
   transcriptRaw: string | null;
   transcriptSegments: { status: string }[];
   registrations: { id: string; name: string; email: string; createdAt: string }[];
@@ -152,6 +153,7 @@ export default function EventDetailPage() {
     heroSubheading: "",
     registrationHeading: "",
     registrationSubheading: "",
+    surveyUrl: "",
     transcriptRaw: "",
   });
 
@@ -185,6 +187,7 @@ export default function EventDetailPage() {
       heroSubheading: data.heroSubheading ?? "",
       registrationHeading: data.registrationHeading ?? "",
       registrationSubheading: data.registrationSubheading ?? "",
+      surveyUrl: data.surveyUrl ?? "",
       transcriptRaw: data.transcriptRaw ?? "",
     });
     setPanelistForms(
@@ -1084,6 +1087,15 @@ export default function EventDetailPage() {
                 rows={2}
                 className="input"
                 placeholder="Final CTA supporting line on /register"
+              />
+            </Field>
+            <Field label="Pre-event survey URL">
+              <input
+                type="text"
+                value={form.surveyUrl}
+                onChange={(e) => setForm((f) => ({ ...f, surveyUrl: e.target.value }))}
+                className="input"
+                placeholder="https://... (shown on the post-registration thank-you screen)"
               />
             </Field>
             <Field label="Free gifts public until">

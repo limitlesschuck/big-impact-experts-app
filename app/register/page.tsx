@@ -215,7 +215,11 @@ export default async function RegisterPage() {
           </p>
           <h2 className="rp-section-heading font-bold text-white mb-6">{heading}</h2>
           <p className="rp-hero-subtitle text-white/70 mb-10">{subheading}</p>
-          <RegistrationForm eventId={event.id} buttonLabel={t.heroCtaButton} />
+          <RegistrationForm
+            eventId={event.id}
+            buttonLabel={t.heroCtaButton}
+            surveyUrl={event.surveyUrl}
+          />
           <p className="rp-small-print text-white/50 mt-6">
             {formatEventDate(event.eventDate)} · {formatEventTime(event.eventDate)} —{" "}
             {t.finalCtaSmallPrintSuffix}

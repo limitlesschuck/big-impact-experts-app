@@ -70,6 +70,7 @@ const EVENT_ALLOWED = [
   "heroSubheading",
   "registrationHeading",
   "registrationSubheading",
+  "surveyUrl",
   "transcriptRaw",
   "transcriptCleaned",
 ];

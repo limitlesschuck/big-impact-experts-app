@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface RegistrationFormProps {
   eventId: string;
   buttonLabel: string;
+  surveyUrl: string | null;
 }
 
-export default function RegistrationForm({ eventId, buttonLabel }: RegistrationFormProps) {
+export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: RegistrationFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -36,11 +38,44 @@ export default function RegistrationForm({ eventId, buttonLabel }: RegistrationF
 
   if (submitted) {
     return (
-      <div className="text-center py-6">
-        <p className="text-xl font-bold text-white mb-2">You're registered!</p>
-        <p className="text-base text-white/70">
-          We'll send the details to {email}.
+      <div className="bg-white rounded-2xl p-8 sm:p-10 text-center">
+        <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-3">
+          Thank You For Registering!
+        </h3>
+        <p className="text-gray-600 mb-8">
+          Your confirmation email with your access link has been sent to your inbox
         </p>
+
+        {surveyUrl && (
+          <>
+            <div className="bg-gray-100 border border-gray-200 rounded-xl p-6 sm:p-8">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
+                One quick favor — it takes less than 60 seconds
+              </h4>
+              <p className="text-sm text-gray-600 mb-6">
+                Please complete this short pre-training survey. Your answers will help me
+                customize the content so this training is as relevant and valuable as possible
+                for you personally.
+              </p>
+              <a
+                href={surveyUrl}
+                className="inline-block px-8 py-3 rp-bg-navy text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Complete The Pre-Event Survey
+              </a>
+              <p className="text-xs text-gray-500 mt-4">
+                Less than 1 minute · Makes a big difference
+              </p>
+            </div>
+
+            <Link
+              href="/register/thank-you"
+              className="inline-block text-sm text-blue-700 underline mt-6"
+            >
+              No thanks, I don&rsquo;t want to do the survey.
+            </Link>
+          </>
+        )}
       </div>
     );
   }

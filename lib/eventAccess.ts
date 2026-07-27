@@ -72,6 +72,7 @@ const REGISTRATION_EVENT_SELECT = {
   heroSubheading: true,
   registrationHeading: true,
   registrationSubheading: true,
+  surveyUrl: true,
   panelists: {
     select: {
       id: true,

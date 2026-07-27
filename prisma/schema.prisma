@@ -97,6 +97,7 @@ model Event {
   heroSubheading         String?   @db.Text
   registrationHeading    String?
   registrationSubheading String?   @db.Text
+  surveyUrl              String?
   transcriptRaw          String?   @db.Text
   transcriptCleaned      String?   @db.Text
   youtubeId              String?
