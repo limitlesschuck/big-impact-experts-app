@@ -156,6 +156,7 @@ model Panelist {
   titleByline          String?
   titleAreaOfExpertise String?
   bio                  String?  @db.Text
+  shortBio             String?  @db.Text
   headshotUrl          String?
   email                String?
   affiliateLink        String?

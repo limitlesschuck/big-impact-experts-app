@@ -76,6 +76,61 @@ Generate a structured guide and return ONLY valid JSON with no markdown, no code
   }
 }
 
+// Truncates at a hard character limit without cutting a word in half --
+// models don't always hit the limit exactly despite instructions, so this
+// is the enforcement backstop, not the primary mechanism.
+function truncateAtWord(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const cut = text.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+export async function shortenPanelistBio(params: {
+  panelistName: string;
+  panelistBio: string;
+  maxLength: number;
+}): Promise<string> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) throw new Error("CLAUDE_API_KEY not set");
+
+  const prompt = `You are writing a one-line bio for an expert speaker's card on an event registration page. Attendees will read this in about 3 seconds while deciding whether to register, so it must be sharp and specific -- not a generic career summary.
+
+Speaker: ${params.panelistName}
+
+FULL BIO:
+${params.panelistBio}
+
+Write a condensed version of this bio for the registration page, following these rules:
+- Focus specifically on the ONE primary thing this person can help attendees with -- their core expertise, specialty, or the outcome they're known for delivering. Do not attempt to summarize their whole career or list multiple accomplishments.
+- Write in third person, present tense.
+- HARD LIMIT: ${params.maxLength} characters maximum, including spaces. Do not exceed this under any circumstances.
+- No quotation marks, no markdown, no preamble, no explanation -- output ONLY the finished bio text and nothing else.`;
+
+  const res = await fetch(CLAUDE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: Math.max(150, Math.ceil(params.maxLength / 3)),
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Claude API error shortening bio: ${res.status} — ${error}`);
+  }
+
+  const data = await res.json();
+  const text = (data.content?.[0]?.text ?? "").trim();
+  return truncateAtWord(text, params.maxLength);
+}
+
 export async function generateEpisodeContent(params: {
   titleOriginal: string;
   descriptionOriginal: string;

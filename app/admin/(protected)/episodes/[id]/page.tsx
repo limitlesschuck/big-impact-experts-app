@@ -20,6 +20,7 @@ interface Panelist {
   titleByline: string | null;
   titleAreaOfExpertise: string | null;
   bio: string | null;
+  shortBio: string | null;
   headshotUrl: string | null;
   email: string | null;
   affiliateLink: string | null;
@@ -114,10 +115,14 @@ export default function EventDetailPage() {
   const [uploadingHostPhoto, setUploadingHostPhoto] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
+  const [shorteningBioFor, setShorteningBioFor] = useState<string | null>(null);
   const [guideResults, setGuideResults] = useState<
     Record<string, { type: "success" | "error"; text: string }>
   >({});
   const [pdfResults, setPdfResults] = useState<
+    Record<string, { type: "success" | "error"; text: string }>
+  >({});
+  const [shortBioResults, setShortBioResults] = useState<
     Record<string, { type: "success" | "error"; text: string }>
   >({});
   const [guideProgressFor, setGuideProgressFor] = useState<Record<string, string>>({});
@@ -242,6 +247,7 @@ export default function EventDetailPage() {
           titleByline: p.titleByline,
           titleAreaOfExpertise: p.titleAreaOfExpertise,
           bio: p.bio,
+          shortBio: p.shortBio,
           headshotUrl: p.headshotUrl,
           email: p.email,
           affiliateLink: p.affiliateLink,
@@ -331,6 +337,36 @@ export default function EventDetailPage() {
     }
     stopGuideProgress(panelistId);
     setGeneratingGuideFor(null);
+  }
+
+  async function handleShortenBio(panelistId: string) {
+    setShorteningBioFor(panelistId);
+    setShortBioResults((r) => {
+      const { [panelistId]: _, ...rest } = r;
+      return rest;
+    });
+    const res = await fetch(
+      `/api/admin/episodes/${id}/shorten-bio`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ panelistId }),
+      }
+    );
+    const data = await res.json();
+    if (res.ok && data.shortBio) {
+      updatePanelist(panelistId, { shortBio: data.shortBio });
+      setShortBioResults((r) => ({
+        ...r,
+        [panelistId]: { type: "success", text: "Short bio generated — review and save" },
+      }));
+    } else {
+      setShortBioResults((r) => ({
+        ...r,
+        [panelistId]: { type: "error", text: data.error ?? "Bio shortening failed" },
+      }));
+    }
+    setShorteningBioFor(null);
   }
 
   async function handleGeneratePdf(panelistId: string) {
@@ -892,6 +928,40 @@ export default function EventDetailPage() {
                         className="input"
                       />
                     </Field>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-medium text-gray-500">
+                          Short bio (Meet the Experts card)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleShortenBio(p.id)}
+                          disabled={shorteningBioFor === p.id || !pf.bio}
+                          className="text-xs font-medium text-brand-purple hover:underline disabled:opacity-50 disabled:no-underline flex items-center gap-1"
+                        >
+                          {shorteningBioFor === p.id && <Spinner />}
+                          {shorteningBioFor === p.id ? "Shortening..." : "Shorten bio"}
+                        </button>
+                      </div>
+                      <textarea
+                        value={pf.shortBio ?? ""}
+                        onChange={(e) => updatePanelist(p.id, { shortBio: e.target.value })}
+                        rows={2}
+                        className="input"
+                        placeholder="AI-condensed version — falls back to the full bio on the register page until generated"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        {(pf.shortBio ?? "").length} characters
+                      </p>
+                      {shortBioResults[p.id] && (
+                        <p
+                          className={`text-xs mt-1 ${shortBioResults[p.id].type === "success" ? "text-green-600" : "text-red-600"}`}
+                        >
+                          {shortBioResults[p.id].text}
+                        </p>
+                      )}
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
                       <Field label="Free gift title">

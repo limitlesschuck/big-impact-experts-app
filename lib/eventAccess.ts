@@ -81,6 +81,7 @@ const REGISTRATION_EVENT_SELECT = {
       titleAreaOfExpertise: true,
       headshotUrl: true,
       bio: true,
+      shortBio: true,
     },
   },
 } as const;

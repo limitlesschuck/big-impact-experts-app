@@ -80,6 +80,7 @@ const PANELIST_ALLOWED = [
   "titleByline",
   "titleAreaOfExpertise",
   "bio",
+  "shortBio",
   "headshotUrl",
   "email",
   "affiliateLink",

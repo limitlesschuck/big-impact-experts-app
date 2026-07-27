@@ -180,6 +180,7 @@ function ResponsiveSizeField({
 export default function SettingsPage() {
   const [episodeCardImage, setEpisodeCardImage] = useState<"youtube_thumbnail" | "cover_art">("youtube_thumbnail");
   const [episodeGuideEnabled, setEpisodeGuideEnabled] = useState(false);
+  const [shortBioMaxLength, setShortBioMaxLength] = useState(300);
   const [registerPage, setRegisterPage] = useState<RegisterPageConfig>(DEFAULT_REGISTER_PAGE_CONFIG);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -223,6 +224,7 @@ export default function SettingsPage() {
       .then((data) => {
         if (data.episodeCardImage) setEpisodeCardImage(data.episodeCardImage);
         if (data.episodeGuideEnabled !== undefined) setEpisodeGuideEnabled(data.episodeGuideEnabled);
+        if (typeof data.shortBioMaxLength === "number") setShortBioMaxLength(data.shortBioMaxLength);
         if (data.registerPage) setRegisterPage(deepMerge(DEFAULT_REGISTER_PAGE_CONFIG, data.registerPage));
       });
   }, []);
@@ -233,7 +235,7 @@ export default function SettingsPage() {
     const res = await fetch("/api/admin/site-config", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ episodeCardImage, episodeGuideEnabled, registerPage }),
+      body: JSON.stringify({ episodeCardImage, episodeGuideEnabled, shortBioMaxLength, registerPage }),
     });
     if (res.ok) {
       setMessage({ type: "success", text: "Settings saved" });
@@ -312,6 +314,26 @@ export default function SettingsPage() {
             <span className="text-sm text-gray-700">
               {episodeGuideEnabled ? "Episode guides enabled" : "Episode guides disabled"}
             </span>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 pt-6 mt-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-1">Panelist short bio</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Maximum length for the AI-generated short bio shown on Meet the Experts cards
+            (via the &ldquo;Shorten bio&rdquo; button on each panelist). Existing short bios
+            are unaffected until regenerated.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={50}
+              max={1000}
+              value={shortBioMaxLength}
+              onChange={(e) => setShortBioMaxLength(Number(e.target.value) || 300)}
+              className="w-24 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+            />
+            <span className="text-sm text-gray-500">characters</span>
           </div>
         </div>
 

@@ -164,7 +164,7 @@ export default async function RegisterPage() {
               key={p.id}
               name={p.name}
               title={panelistTitle(p)}
-              bio={p.bio}
+              bio={p.shortBio || p.bio}
               headshotUrl={p.headshotUrl}
             />
           ))}
