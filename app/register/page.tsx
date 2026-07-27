@@ -1,14 +1,13 @@
-import { getSoonestUpcomingEvent, type PublicEventForRegistration } from "@/lib/eventAccess";
+import {
+  getSoonestUpcomingEvent,
+  type PublicEventForRegistration,
+} from "@/lib/eventAccess";
+import { buildRegisterPageCss } from "@/lib/registerPageConfig";
+import { getRegisterPageConfig } from "@/lib/getRegisterPageConfig";
 import CountdownBar from "@/components/CountdownBar";
 import RegistrationForm from "@/components/RegistrationForm";
 
 export const dynamic = "force-dynamic";
-
-const DEFAULT_HOST_NAME = "Chuck Anderson";
-const DEFAULT_HOST_TITLE = "Affiliate Management Expert";
-const DEFAULT_REGISTRATION_HEADING = "Ready to Grow Your Impact, Influence, and Income?";
-const DEFAULT_REGISTRATION_SUBHEADING =
-  "YES! I Want To Attend This Free Event With Chuck Anderson & Learn How To Make A Bigger Impact, Grow My Influence, And Earn More Profit — From 6 Industry Experts In Just 90 Minutes!";
 
 function formatEventDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -38,7 +37,7 @@ function renderEmphasizedTitle(title: string) {
     const match = part.match(/^\*\*([^*]+)\*\*$/);
     if (match) {
       return (
-        <span key={i} className="text-brand-orange">
+        <span key={i} className="rp-orange">
           {match[1]}
         </span>
       );
@@ -73,78 +72,86 @@ function ExpertCard({
       ) : (
         <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gray-100 mx-auto mb-4" />
       )}
-      <p className="text-lg font-bold text-gray-900">{name}</p>
-      {title && (
-        <p className="text-base text-brand-orange capitalize mt-1">{title}</p>
-      )}
-      {bio && <p className="text-base text-gray-500 mt-2 leading-relaxed">{bio}</p>}
+      <p className="rp-card-name font-bold text-gray-900">{name}</p>
+      {title && <p className="rp-card-title rp-orange capitalize mt-1">{title}</p>}
+      {bio && <p className="rp-card-bio text-gray-500 mt-2 leading-relaxed">{bio}</p>}
     </div>
   );
 }
 
 export default async function RegisterPage() {
-  const event: PublicEventForRegistration | null = await getSoonestUpcomingEvent();
+  const [event, config]: [PublicEventForRegistration | null, Awaited<ReturnType<typeof getRegisterPageConfig>>] =
+    await Promise.all([getSoonestUpcomingEvent(), getRegisterPageConfig()]);
+
+  const css = buildRegisterPageCss(config);
+  const t = config.text;
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center px-6">
-        <p className="text-lg text-gray-600 text-center">
-          Nothing scheduled right now — check back soon.
-        </p>
+      <div className="min-h-screen rp-bg-page flex items-center justify-center px-6">
+        <style dangerouslySetInnerHTML={{ __html: css }} />
+        <p className="text-lg text-gray-600 text-center">{t.nothingScheduledMessage}</p>
       </div>
     );
   }
 
   const eventDateStr = event.eventDate.toISOString();
-  const hostName = orDefault(event.hostName, DEFAULT_HOST_NAME);
-  const hostTitle = orDefault(event.hostTitle, DEFAULT_HOST_TITLE);
+  const hostName = orDefault(event.hostName, "Chuck Anderson");
+  const hostTitle = orDefault(event.hostTitle, "Affiliate Management Expert");
   const heroTitle = orDefault(event.titleYoutube, event.titleOriginal);
-  const heading = orDefault(event.registrationHeading, DEFAULT_REGISTRATION_HEADING);
-  const subheading = orDefault(event.registrationSubheading, DEFAULT_REGISTRATION_SUBHEADING);
+  const heading = orDefault(event.registrationHeading, t.defaultRegistrationHeading);
+  const subheading = orDefault(event.registrationSubheading, t.defaultRegistrationSubheading);
 
   return (
-    <div className="min-h-screen bg-brand-bg">
+    <div className="min-h-screen rp-bg-page">
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
       {/* Hero */}
-      <div className="bg-brand-navy">
+      <div className="rp-bg-navy">
         <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 lg:pt-28 pb-16 sm:pb-20 text-center">
-          <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-6">
-            Free Live Event — {formatEventDate(event.eventDate)}
+          <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-6">
+            {t.heroEyebrowPrefix} {formatEventDate(event.eventDate)}
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+          <h1 className="rp-hero-title font-bold text-white leading-tight mb-6">
             {renderEmphasizedTitle(heroTitle)}
           </h1>
           {event.descriptionWebsite && (
-            <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-14">
+            <p className="rp-hero-subtitle text-white/70 max-w-2xl mx-auto mb-14">
               {event.descriptionWebsite}
             </p>
           )}
 
           <div className="mb-12">
-            <CountdownBar eventDate={eventDateStr} />
+            <CountdownBar
+              eventDate={eventDateStr}
+              dayLabel={t.countdownDayLabel}
+              hourLabel={t.countdownHourLabel}
+              minuteLabel={t.countdownMinuteLabel}
+              secondLabel={t.countdownSecondLabel}
+              finishedMessage={t.countdownFinishedMessage}
+            />
           </div>
 
           <a
             href="#register"
-            className="inline-block px-10 py-5 bg-brand-orange text-white text-lg font-bold rounded-lg hover:opacity-90 transition-opacity"
+            className="rp-button-text inline-block px-10 py-5 rp-bg-orange text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
           >
-            Save My Free Seat Now
+            {t.heroCtaButton}
           </a>
-          <p className="text-base text-white/60 mt-5">
-            Free to attend. Limited seats. Register now to secure your spot.
-          </p>
+          <p className="text-base text-white/60 mt-5">{t.heroSupportingLine}</p>
         </div>
       </div>
 
       {/* Meet the Experts */}
       <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-20 sm:py-24">
-        <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4 text-center">
-          Meet the Experts
+        <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4 text-center">
+          {t.expertsEyebrow}
         </p>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-navy text-center mb-4">
-          Learn From These Industry Leaders
+        <h2 className="rp-section-heading font-bold rp-navy text-center mb-4">
+          {t.expertsHeading}
         </h2>
-        <p className="text-lg text-gray-500 text-center max-w-2xl mx-auto mb-16">
-          Each expert brings a distinct, proven strategy you can apply immediately.
+        <p className="rp-section-subhead text-gray-500 text-center max-w-2xl mx-auto mb-16">
+          {t.expertsSubhead}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-x-10 lg:gap-y-16">
           <ExpertCard
@@ -170,13 +177,11 @@ export default async function RegisterPage() {
         <div className="bg-white border-t border-gray-100">
           <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-20 sm:py-24 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
             <div className="lg:col-span-3">
-              <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4">
-                A Note From Your Host
+              <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4">
+                {t.hostNoteEyebrow}
               </p>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-navy mb-8">
-                Why I Created This Event
-              </h2>
-              <div className="font-serif text-lg sm:text-xl text-gray-700 leading-relaxed space-y-5">
+              <h2 className="rp-section-heading font-bold rp-navy mb-8">{t.hostNoteHeading}</h2>
+              <div className="rp-host-note-body font-serif text-gray-700 leading-relaxed space-y-5">
                 {event.hostNote
                   .split("\n")
                   .map((l) => l.trim())
@@ -185,7 +190,7 @@ export default async function RegisterPage() {
                     <p key={i}>{para}</p>
                   ))}
               </div>
-              <p className="text-base text-gray-500 mt-8">
+              <p className="rp-attribution text-gray-500 mt-8">
                 — {hostName}, {hostTitle}
               </p>
             </div>
@@ -203,26 +208,26 @@ export default async function RegisterPage() {
       )}
 
       {/* Final CTA / registration form */}
-      <div id="register" className="bg-brand-navy scroll-mt-4">
+      <div id="register" className="rp-bg-navy scroll-mt-4">
         <div className="max-w-2xl mx-auto px-6 sm:px-8 py-20 sm:py-24 text-center">
-          <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4">
-            Join Us Live on {formatEventDate(event.eventDate)} — {formatEventTime(event.eventDate)}
+          <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4">
+            {t.finalCtaEyebrowPrefix} {formatEventDate(event.eventDate)} —{" "}
+            {formatEventTime(event.eventDate)}
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-            {heading}
-          </h2>
-          <p className="text-base sm:text-lg text-white/70 mb-10">{subheading}</p>
-          <RegistrationForm eventId={event.id} />
-          <p className="text-sm text-white/50 mt-6">
-            {formatEventDate(event.eventDate)} · {formatEventTime(event.eventDate)} — Free to attend
+          <h2 className="rp-section-heading font-bold text-white mb-6">{heading}</h2>
+          <p className="rp-hero-subtitle text-white/70 mb-10">{subheading}</p>
+          <RegistrationForm eventId={event.id} buttonLabel={t.heroCtaButton} />
+          <p className="rp-small-print text-white/50 mt-6">
+            {formatEventDate(event.eventDate)} · {formatEventTime(event.eventDate)} —{" "}
+            {t.finalCtaSmallPrintSuffix}
           </p>
         </div>
       </div>
 
       {/* Footer */}
       <div className="py-6">
-        <p className="text-sm text-gray-400 text-center">
-          © {new Date().getFullYear()} BigImpactExperts.com
+        <p className="rp-small-print text-gray-400 text-center">
+          © {new Date().getFullYear()} {t.footerText}
         </p>
       </div>
     </div>

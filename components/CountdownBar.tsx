@@ -17,13 +17,11 @@ function Unit({ value, label, orange = false }: { value: number; label: string; 
   return (
     <div className="flex flex-col items-center">
       <span
-        className={`text-4xl sm:text-5xl lg:text-6xl font-bold tabular-nums ${
-          orange ? "text-brand-orange" : "text-white"
-        }`}
+        className={`rp-countdown-digit font-bold tabular-nums ${orange ? "rp-orange" : "text-white"}`}
       >
         {String(value).padStart(2, "0")}
       </span>
-      <span className="text-xs sm:text-sm font-semibold tracking-widest text-white/50 mt-2">
+      <span className="rp-countdown-label font-semibold tracking-widest text-white/50 mt-2">
         {label}
       </span>
     </div>
@@ -31,16 +29,31 @@ function Unit({ value, label, orange = false }: { value: number; label: string; 
 }
 
 function Colon() {
-  return (
-    <span className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white/25 -mt-5 sm:-mt-6">
-      :
-    </span>
-  );
+  return <span className="rp-countdown-digit font-bold text-white/25 -mt-5 sm:-mt-6">:</span>;
+}
+
+interface CountdownBarProps {
+  eventDate: string;
+  dayLabel: string;
+  hourLabel: string;
+  minuteLabel: string;
+  secondLabel: string;
+  finishedMessage: string;
 }
 
 // Lives inline in the hero's own navy background -- no card/box of
 // its own. Days/hours/minutes white, seconds orange, muted colons.
-export default function CountdownBar({ eventDate }: { eventDate: string }) {
+// Sizing/coloring comes from the rp-* classes injected page-wide by
+// the admin-configurable register page settings, not hardcoded
+// Tailwind text-size classes.
+export default function CountdownBar({
+  eventDate,
+  dayLabel,
+  hourLabel,
+  minuteLabel,
+  secondLabel,
+  finishedMessage,
+}: CountdownBarProps) {
   const target = new Date(eventDate);
   const [parts, setParts] = useState(() => getTimeParts(target));
 
@@ -51,22 +64,18 @@ export default function CountdownBar({ eventDate }: { eventDate: string }) {
   }, [eventDate]);
 
   if (parts.diff <= 0) {
-    return (
-      <p className="text-base font-medium text-white/80 text-center">
-        This event has started
-      </p>
-    );
+    return <p className="text-base font-medium text-white/80 text-center">{finishedMessage}</p>;
   }
 
   return (
     <div className="flex items-start justify-center gap-3 sm:gap-5 lg:gap-6">
-      <Unit value={parts.days} label="DAYS" />
+      <Unit value={parts.days} label={dayLabel} />
       <Colon />
-      <Unit value={parts.hours} label="HRS" />
+      <Unit value={parts.hours} label={hourLabel} />
       <Colon />
-      <Unit value={parts.minutes} label="MIN" />
+      <Unit value={parts.minutes} label={minuteLabel} />
       <Colon />
-      <Unit value={parts.seconds} label="SEC" orange />
+      <Unit value={parts.seconds} label={secondLabel} orange />
     </div>
   );
 }

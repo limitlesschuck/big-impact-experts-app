@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-export default function RegistrationForm({ eventId }: { eventId: string }) {
+interface RegistrationFormProps {
+  eventId: string;
+  buttonLabel: string;
+}
+
+export default function RegistrationForm({ eventId, buttonLabel }: RegistrationFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -53,7 +58,7 @@ export default function RegistrationForm({ eventId }: { eventId: string }) {
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
           required
-          className="w-full px-5 py-4 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+          className="rp-form-input w-full px-5 py-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         />
       </div>
       <div>
@@ -67,7 +72,7 @@ export default function RegistrationForm({ eventId }: { eventId: string }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Your email"
           required
-          className="w-full px-5 py-4 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+          className="rp-form-input w-full px-5 py-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         />
       </div>
 
@@ -76,9 +81,9 @@ export default function RegistrationForm({ eventId }: { eventId: string }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-4 bg-brand-orange text-white text-lg font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="rp-button-text w-full py-4 rp-bg-orange text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
-        {submitting ? "Registering..." : "Save My Free Seat Now"}
+        {submitting ? "Registering..." : buttonLabel}
       </button>
     </form>
   );
