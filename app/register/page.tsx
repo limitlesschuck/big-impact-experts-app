@@ -4,7 +4,11 @@ import RegistrationForm from "@/components/RegistrationForm";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_REGISTRATION_HEADING = "Don't Miss This Free Event";
+const DEFAULT_HOST_NAME = "Chuck Anderson";
+const DEFAULT_HOST_TITLE = "Affiliate Management Expert";
+const DEFAULT_REGISTRATION_HEADING = "Ready to Grow Your Impact, Influence, and Income?";
+const DEFAULT_REGISTRATION_SUBHEADING =
+  "YES! I Want To Attend This Free Event With Chuck Anderson & Learn How To Make A Bigger Impact, Grow My Influence, And Earn More Profit — From 6 Industry Experts In Just 90 Minutes!";
 
 function formatEventDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -16,6 +20,14 @@ function formatEventDate(date: Date) {
 
 function formatEventTime(date: Date) {
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+// Falsy-safe fallback -- "" (empty string) must fall through just like
+// null/undefined does. Plain `??` doesn't catch empty string, which is
+// exactly what broke the hero title in production: the admin edit form
+// writes "" (not null) for any untouched optional field on save.
+function orDefault(value: string | null | undefined, fallback: string): string {
+  return value && value.trim() ? value : fallback;
 }
 
 // Supports a simple **word** convention in the title so an admin can
@@ -56,16 +68,16 @@ function ExpertCard({
         <img
           src={headshotUrl}
           alt={name}
-          className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border border-gray-200"
+          className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover mx-auto mb-4 border border-gray-200"
         />
       ) : (
-        <div className="w-24 h-24 rounded-full bg-gray-100 mx-auto mb-4" />
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gray-100 mx-auto mb-4" />
       )}
-      <p className="font-bold text-gray-900">{name}</p>
+      <p className="text-lg font-bold text-gray-900">{name}</p>
       {title && (
-        <p className="text-sm text-brand-orange capitalize mt-0.5">{title}</p>
+        <p className="text-base text-brand-orange capitalize mt-1">{title}</p>
       )}
-      {bio && <p className="text-sm text-gray-500 mt-2">{bio}</p>}
+      {bio && <p className="text-base text-gray-500 mt-2 leading-relaxed">{bio}</p>}
     </div>
   );
 }
@@ -84,57 +96,61 @@ export default async function RegisterPage() {
   }
 
   const eventDateStr = event.eventDate.toISOString();
-  const hostTitle = event.hostTitle || "Affiliate Management Expert";
-  const heading = event.registrationHeading || DEFAULT_REGISTRATION_HEADING;
+  const hostName = orDefault(event.hostName, DEFAULT_HOST_NAME);
+  const hostTitle = orDefault(event.hostTitle, DEFAULT_HOST_TITLE);
+  const heroTitle = orDefault(event.titleYoutube, event.titleOriginal);
+  const heading = orDefault(event.registrationHeading, DEFAULT_REGISTRATION_HEADING);
+  const subheading = orDefault(event.registrationSubheading, DEFAULT_REGISTRATION_SUBHEADING);
 
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* Hero */}
       <div className="bg-brand-navy">
-        <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 text-center">
-          <p className="text-xs font-semibold tracking-widest text-brand-teal uppercase mb-5">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 lg:pt-28 pb-16 sm:pb-20 text-center">
+          <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-6">
             Free Live Event — {formatEventDate(event.eventDate)}
           </p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-white leading-tight mb-5">
-            {renderEmphasizedTitle(event.titleYoutube ?? event.titleOriginal)}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+            {renderEmphasizedTitle(heroTitle)}
           </h1>
           {event.descriptionWebsite && (
-            <p className="text-base text-white/70 max-w-xl mx-auto mb-12">
+            <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-14">
               {event.descriptionWebsite}
             </p>
           )}
 
-          <div className="mb-10">
+          <div className="mb-12">
             <CountdownBar eventDate={eventDateStr} />
           </div>
 
           <a
             href="#register"
-            className="inline-block px-8 py-4 bg-brand-orange text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+            className="inline-block px-10 py-5 bg-brand-orange text-white text-lg font-bold rounded-lg hover:opacity-90 transition-opacity"
           >
             Save My Free Seat Now
           </a>
-          <p className="text-sm text-white/60 mt-4">
+          <p className="text-base text-white/60 mt-5">
             Free to attend. Limited seats. Register now to secure your spot.
           </p>
         </div>
       </div>
 
       {/* Meet the Experts */}
-      <div className="max-w-4xl mx-auto px-6 py-20">
-        <p className="text-xs font-semibold tracking-widest text-brand-teal uppercase mb-3 text-center">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-20 sm:py-24">
+        <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4 text-center">
           Meet the Experts
         </p>
-        <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy text-center mb-3">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-navy text-center mb-4">
           Learn From These Industry Leaders
         </h2>
-        <p className="text-base text-gray-500 text-center max-w-lg mx-auto mb-12">
+        <p className="text-lg text-gray-500 text-center max-w-2xl mx-auto mb-16">
           Each expert brings a distinct, proven strategy you can apply immediately.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-x-10 lg:gap-y-16">
           <ExpertCard
-            name={event.hostName ?? "Chuck Anderson"}
+            name={hostName}
             title={hostTitle}
+            bio={event.hostBio}
             headshotUrl={event.hostHeadshotUrl}
           />
           {event.panelists.map((p) => (
@@ -152,15 +168,15 @@ export default async function RegisterPage() {
       {/* Note From Your Host */}
       {event.hostNote && (
         <div className="bg-white border-t border-gray-100">
-          <div className="max-w-4xl mx-auto px-6 py-20 grid grid-cols-1 sm:grid-cols-5 gap-10 items-center">
-            <div className="sm:col-span-3">
-              <p className="text-xs font-semibold tracking-widest text-brand-teal uppercase mb-3">
+          <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-20 sm:py-24 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
+            <div className="lg:col-span-3">
+              <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4">
                 A Note From Your Host
               </p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy mb-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-navy mb-8">
                 Why I Created This Event
               </h2>
-              <div className="font-serif text-base text-gray-700 leading-relaxed space-y-4">
+              <div className="font-serif text-lg sm:text-xl text-gray-700 leading-relaxed space-y-5">
                 {event.hostNote
                   .split("\n")
                   .map((l) => l.trim())
@@ -169,15 +185,15 @@ export default async function RegisterPage() {
                     <p key={i}>{para}</p>
                   ))}
               </div>
-              <p className="text-sm text-gray-500 mt-6">
-                — {event.hostName ?? "Chuck Anderson"}, {hostTitle}
+              <p className="text-base text-gray-500 mt-8">
+                — {hostName}, {hostTitle}
               </p>
             </div>
             {event.hostPhotoUrl && (
-              <div className="sm:col-span-2">
+              <div className="lg:col-span-2">
                 <img
                   src={event.hostPhotoUrl}
-                  alt={event.hostName ?? "Host"}
+                  alt={hostName}
                   className="w-full rounded-xl object-cover"
                 />
               </div>
@@ -188,16 +204,16 @@ export default async function RegisterPage() {
 
       {/* Final CTA / registration form */}
       <div id="register" className="bg-brand-navy scroll-mt-4">
-        <div className="max-w-md mx-auto px-6 py-20 text-center">
-          <p className="text-xs font-semibold tracking-widest text-brand-teal uppercase mb-3">
+        <div className="max-w-2xl mx-auto px-6 sm:px-8 py-20 sm:py-24 text-center">
+          <p className="text-sm sm:text-base font-semibold tracking-widest text-brand-teal uppercase mb-4">
             Join Us Live on {formatEventDate(event.eventDate)} — {formatEventTime(event.eventDate)}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{heading}</h2>
-          <p className="text-sm text-white/70 mb-8">
-            Reserve your free seat now — space is limited and fills up fast.
-          </p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+            {heading}
+          </h2>
+          <p className="text-base sm:text-lg text-white/70 mb-10">{subheading}</p>
           <RegistrationForm eventId={event.id} />
-          <p className="text-xs text-white/50 mt-6">
+          <p className="text-sm text-white/50 mt-6">
             {formatEventDate(event.eventDate)} · {formatEventTime(event.eventDate)} — Free to attend
           </p>
         </div>
@@ -205,7 +221,7 @@ export default async function RegisterPage() {
 
       {/* Footer */}
       <div className="py-6">
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-sm text-gray-400 text-center">
           © {new Date().getFullYear()} BigImpactExperts.com
         </p>
       </div>

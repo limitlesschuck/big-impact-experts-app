@@ -66,7 +66,9 @@ const EVENT_ALLOWED = [
   "recordingUrl",
   "giftPublicUntil",
   "hostNote",
+  "hostBio",
   "registrationHeading",
+  "registrationSubheading",
   "transcriptRaw",
   "transcriptCleaned",
 ];

@@ -59,7 +59,9 @@ interface Event {
   recordingUrl: string | null;
   giftPublicUntil: string | null;
   hostNote: string | null;
+  hostBio: string | null;
   registrationHeading: string | null;
+  registrationSubheading: string | null;
   transcriptRaw: string | null;
   transcriptSegments: { status: string }[];
   registrations: { id: string; name: string; email: string; createdAt: string }[];
@@ -145,7 +147,9 @@ export default function EventDetailPage() {
     recordingUrl: "",
     giftPublicUntil: "",
     hostNote: "",
+    hostBio: "",
     registrationHeading: "",
+    registrationSubheading: "",
     transcriptRaw: "",
   });
 
@@ -175,7 +179,9 @@ export default function EventDetailPage() {
       recordingUrl: data.recordingUrl ?? "",
       giftPublicUntil: toDateInputValue(data.giftPublicUntil),
       hostNote: data.hostNote ?? "",
+      hostBio: data.hostBio ?? "",
       registrationHeading: data.registrationHeading ?? "",
+      registrationSubheading: data.registrationSubheading ?? "",
       transcriptRaw: data.transcriptRaw ?? "",
     });
     setPanelistForms(
@@ -758,6 +764,16 @@ export default function EventDetailPage() {
                 placeholder="Why I created this event — shown on the registration page"
               />
             </Field>
+
+            <Field label="Host short bio (for Meet the Experts card)">
+              <textarea
+                value={form.hostBio}
+                onChange={(e) => setForm((f) => ({ ...f, hostBio: e.target.value }))}
+                rows={2}
+                className="input"
+                placeholder="Same length as a panelist bio"
+              />
+            </Field>
           </CollapsibleSection>
 
           <div>
@@ -1045,6 +1061,17 @@ export default function EventDetailPage() {
                 onChange={(e) => setForm((f) => ({ ...f, registrationHeading: e.target.value }))}
                 className="input"
                 placeholder="Final CTA heading on /register"
+              />
+            </Field>
+            <Field label="Registration page supporting line">
+              <textarea
+                value={form.registrationSubheading}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, registrationSubheading: e.target.value }))
+                }
+                rows={2}
+                className="input"
+                placeholder="Final CTA supporting line on /register"
               />
             </Field>
             <Field label="Free gifts public until">

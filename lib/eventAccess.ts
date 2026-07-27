@@ -69,7 +69,9 @@ const REGISTRATION_EVENT_SELECT = {
   hostHeadshotUrl: true,
   hostPhotoUrl: true,
   hostNote: true,
+  hostBio: true,
   registrationHeading: true,
+  registrationSubheading: true,
   panelists: {
     select: {
       id: true,

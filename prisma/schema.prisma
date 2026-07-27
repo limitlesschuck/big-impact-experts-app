@@ -61,9 +61,9 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  publishLogs  PublishLog[]
+  accounts    Account[]
+  sessions    Session[]
+  publishLogs PublishLog[]
 }
 
 // ── Members (paying subscribers — gated by Systeme.io tag, ────────
@@ -83,38 +83,40 @@ model Member {
 // ── Core content tables ───────────────────────────────────────────
 
 model Event {
-  id                  String    @id @default(cuid())
-  slug                String?   @unique
-  eventDate           DateTime
-  hostName            String?
-  hostTitle           String?   @default("Affiliate Management Expert")
-  hostHeadshotUrl     String?
-  hostPhotoUrl        String?
-  recordingUrl        String?
-  giftPublicUntil     DateTime?
-  hostNote            String?   @db.Text
-  registrationHeading String?
-  transcriptRaw       String?   @db.Text
-  transcriptCleaned   String?   @db.Text
-  youtubeId           String?
-  titleOriginal       String
-  titleYoutube        String?
-  titlePodcast        String?
-  descriptionOriginal String?   @db.Text
-  descriptionYoutube  String?   @db.Text
-  descriptionWebsite  String?   @db.Text
-  tags                String[]
-  thumbnailUrl        String?
-  coverArtUrl         String?
-  youtubeThumbnailUrl String?
-  audioUrl            String?
-  videoUrl            String?
-  mp4Url              String?
-  durationSeconds     Int?
-  publishStatus       String    @default("draft")
-  publishedAt         DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  slug                   String?   @unique
+  eventDate              DateTime
+  hostName               String?
+  hostTitle              String?   @default("Affiliate Management Expert")
+  hostHeadshotUrl        String?
+  hostPhotoUrl           String?
+  recordingUrl           String?
+  giftPublicUntil        DateTime?
+  hostNote               String?   @db.Text
+  hostBio                String?   @db.Text
+  registrationHeading    String?
+  registrationSubheading String?   @db.Text
+  transcriptRaw          String?   @db.Text
+  transcriptCleaned      String?   @db.Text
+  youtubeId              String?
+  titleOriginal          String
+  titleYoutube           String?
+  titlePodcast           String?
+  descriptionOriginal    String?   @db.Text
+  descriptionYoutube     String?   @db.Text
+  descriptionWebsite     String?   @db.Text
+  tags                   String[]
+  thumbnailUrl           String?
+  coverArtUrl            String?
+  youtubeThumbnailUrl    String?
+  audioUrl               String?
+  videoUrl               String?
+  mp4Url                 String?
+  durationSeconds        Int?
+  publishStatus          String    @default("draft")
+  publishedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   panelists          Panelist[]
   leads              Lead[]
@@ -146,25 +148,25 @@ model Registration {
 }
 
 model Panelist {
-  id                     String   @id @default(cuid())
-  eventId                String
-  name                   String
-  titleByline            String?
-  titleAreaOfExpertise   String?
-  bio                    String?  @db.Text
-  headshotUrl            String?
-  email                  String?
-  affiliateLink          String?
-  swipeCopy              String?  @db.Text
-  transcriptSegment      String?  @db.Text
-  guideBio               String?  @db.Text
-  guideFrameworks        String?  @db.Text
-  guideTakeaways         String?  @db.Text
-  guideQuotes            String?  @db.Text
-  guideActionItems       String?  @db.Text
-  guidePdfUrl            String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  eventId              String
+  name                 String
+  titleByline          String?
+  titleAreaOfExpertise String?
+  bio                  String?  @db.Text
+  headshotUrl          String?
+  email                String?
+  affiliateLink        String?
+  swipeCopy            String?  @db.Text
+  transcriptSegment    String?  @db.Text
+  guideBio             String?  @db.Text
+  guideFrameworks      String?  @db.Text
+  guideTakeaways       String?  @db.Text
+  guideQuotes          String?  @db.Text
+  guideActionItems     String?  @db.Text
+  guidePdfUrl          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   event              Event               @relation(fields: [eventId], references: [id])
   toolEntry          ToolEntry?
@@ -175,17 +177,17 @@ model Panelist {
 }
 
 model ToolEntry {
-  id                       String   @id @default(cuid())
-  panelistId               String   @unique
-  freeGiftTitle            String?
-  freeGiftDescription      String?  @db.Text
-  freeGiftUrl              String?
-  vipGiftTitle             String?
-  vipGiftDescription       String?  @db.Text
-  vipGiftUrl               String?
-  featured                 Boolean  @default(false)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  panelistId          String   @unique
+  freeGiftTitle       String?
+  freeGiftDescription String?  @db.Text
+  freeGiftUrl         String?
+  vipGiftTitle        String?
+  vipGiftDescription  String?  @db.Text
+  vipGiftUrl          String?
+  featured            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   panelist Panelist @relation(fields: [panelistId], references: [id])
 }
@@ -229,24 +231,24 @@ model Cta {
 // ── Phase 3 Affiliate Tracking, not wired up in Phase 1) ──────────
 
 model Lead {
-  id                String    @id @default(cuid())
-  email             String
-  firstName         String?
-  crisisCategory    String
-  crisisDuration    String?
-  urgency           String?
-  score             Int?
-  resultType        String?
-  sourceEventId     String?
-  affiliateRouteId  String?
-  expertReferralId  String?
-  emailSynced       Boolean   @default(false)
-  ipAddress         String?
-  createdAt         DateTime  @default(now())
+  id               String   @id @default(cuid())
+  email            String
+  firstName        String?
+  crisisCategory   String
+  crisisDuration   String?
+  urgency          String?
+  score            Int?
+  resultType       String?
+  sourceEventId    String?
+  affiliateRouteId String?
+  expertReferralId String?
+  emailSynced      Boolean  @default(false)
+  ipAddress        String?
+  createdAt        DateTime @default(now())
 
-  sourceEvent     Event?           @relation(fields: [sourceEventId], references: [id])
-  affiliateRoute  AffiliateRoute?  @relation(fields: [affiliateRouteId], references: [id])
-  expertReferral  ExpertReferral?  @relation(fields: [expertReferralId], references: [id])
+  sourceEvent    Event?          @relation(fields: [sourceEventId], references: [id])
+  affiliateRoute AffiliateRoute? @relation(fields: [affiliateRouteId], references: [id])
+  expertReferral ExpertReferral? @relation(fields: [expertReferralId], references: [id])
 
   @@index([email])
   @@index([crisisCategory])
@@ -254,15 +256,15 @@ model Lead {
 }
 
 model AffiliateRoute {
-  id              String   @id @default(cuid())
-  crisisCategory  String
-  urgencyLevel    String
-  affiliateName   String
-  affiliateUrl    String   @db.Text
-  priority        Int      @default(1)
-  isActive        Boolean  @default(true)
-  isDefault       Boolean  @default(false)
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  crisisCategory String
+  urgencyLevel   String
+  affiliateName  String
+  affiliateUrl   String   @db.Text
+  priority       Int      @default(1)
+  isActive       Boolean  @default(true)
+  isDefault      Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
 
   leads Lead[]
 }
