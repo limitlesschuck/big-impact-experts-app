@@ -21,6 +21,13 @@ async function main() {
 
   console.log("Created admin user:", admin.email);
 
+  const defaultHost = {
+    name: "Chuck Anderson",
+    title: "Affiliate Management Expert",
+    headshotUrl: "https://d1yei2z3i6k35z.cloudfront.net/2470798/6660fde3403e9_ChuckAnderson.png",
+    photoUrl: "https://d1yei2z3i6k35z.cloudfront.net/2470798/660c6f65aec2e_Chuck-400x700.png",
+  };
+
   const existingSiteConfig = await prisma.siteConfig.findFirst();
   if (!existingSiteConfig) {
     await prisma.siteConfig.create({
@@ -28,6 +35,7 @@ async function main() {
         config: {
           episodeCardImage: "youtube_thumbnail",
           episodeGuideEnabled: true,
+          defaultHost,
         },
       },
     });
@@ -40,6 +48,7 @@ async function main() {
         config: {
           ...cfg,
           episodeGuideEnabled: true,
+          defaultHost,
         },
       },
     });

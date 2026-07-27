@@ -32,8 +32,8 @@ export default function RegistrationForm({ eventId }: { eventId: string }) {
   if (submitted) {
     return (
       <div className="text-center py-6">
-        <p className="text-lg font-semibold text-gray-900 mb-1">You're registered!</p>
-        <p className="text-sm text-gray-500">
+        <p className="text-lg font-bold text-white mb-1">You're registered!</p>
+        <p className="text-sm text-white/70">
           We'll send the details to {email}.
         </p>
       </div>
@@ -76,9 +76,9 @@ export default function RegistrationForm({ eventId }: { eventId: string }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-3 bg-brand-orange text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="w-full py-3 bg-brand-orange text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
-        {submitting ? "Registering..." : "Save My Spot"}
+        {submitting ? "Registering..." : "Save My Free Seat Now"}
       </button>
     </form>
   );

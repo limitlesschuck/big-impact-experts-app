@@ -87,9 +87,13 @@ model Event {
   slug                String?   @unique
   eventDate           DateTime
   hostName            String?
+  hostTitle           String?   @default("Affiliate Management Expert")
+  hostHeadshotUrl     String?
+  hostPhotoUrl        String?
   recordingUrl        String?
   giftPublicUntil     DateTime?
   hostNote            String?   @db.Text
+  registrationHeading String?
   transcriptRaw       String?   @db.Text
   transcriptCleaned   String?   @db.Text
   youtubeId           String?

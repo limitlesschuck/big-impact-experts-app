@@ -56,12 +56,23 @@ export async function POST(req: NextRequest) {
     eventDate: eventDateObj,
   });
 
+  // Snapshot the default host profile at creation time -- editable per
+  // event afterward, not a live reference to SiteConfig.
+  const siteConfig = await prisma.siteConfig.findFirst();
+  const defaultHost =
+    (siteConfig?.config as Record<string, unknown> | null)?.defaultHost as
+      | { name?: string; title?: string; headshotUrl?: string; photoUrl?: string }
+      | undefined;
+
   const event = await prisma.event.create({
     data: {
       slug,
       titleOriginal,
       eventDate: eventDateObj,
-      hostName: hostName || null,
+      hostName: hostName || defaultHost?.name || null,
+      hostTitle: defaultHost?.title || "Affiliate Management Expert",
+      hostHeadshotUrl: defaultHost?.headshotUrl || null,
+      hostPhotoUrl: defaultHost?.photoUrl || null,
       recordingUrl: recordingUrl || null,
       transcriptRaw: transcriptRaw || null,
       giftPublicUntil: new Date(eventDateObj.getTime() + 72 * 60 * 60 * 1000),

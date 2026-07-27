@@ -53,9 +53,13 @@ interface Event {
   slug: string | null;
   eventDate: string;
   hostName: string | null;
+  hostTitle: string | null;
+  hostHeadshotUrl: string | null;
+  hostPhotoUrl: string | null;
   recordingUrl: string | null;
   giftPublicUntil: string | null;
   hostNote: string | null;
+  registrationHeading: string | null;
   transcriptRaw: string | null;
   transcriptSegments: { status: string }[];
   registrations: { id: string; name: string; email: string; createdAt: string }[];
@@ -102,6 +106,8 @@ export default function EventDetailPage() {
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingTranscript, setUploadingTranscript] = useState(false);
   const [uploadingHeadshotFor, setUploadingHeadshotFor] = useState<string | null>(null);
+  const [uploadingHostHeadshot, setUploadingHostHeadshot] = useState(false);
+  const [uploadingHostPhoto, setUploadingHostPhoto] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
   const [guideResults, setGuideResults] = useState<
@@ -133,9 +139,13 @@ export default function EventDetailPage() {
     slug: "",
     eventDate: "",
     hostName: "",
+    hostTitle: "",
+    hostHeadshotUrl: "",
+    hostPhotoUrl: "",
     recordingUrl: "",
     giftPublicUntil: "",
     hostNote: "",
+    registrationHeading: "",
     transcriptRaw: "",
   });
 
@@ -159,9 +169,13 @@ export default function EventDetailPage() {
       slug: data.slug ?? "",
       eventDate: toDateTimeInputValue(data.eventDate),
       hostName: data.hostName ?? "",
+      hostTitle: data.hostTitle ?? "",
+      hostHeadshotUrl: data.hostHeadshotUrl ?? "",
+      hostPhotoUrl: data.hostPhotoUrl ?? "",
       recordingUrl: data.recordingUrl ?? "",
       giftPublicUntil: toDateInputValue(data.giftPublicUntil),
       hostNote: data.hostNote ?? "",
+      registrationHeading: data.registrationHeading ?? "",
       transcriptRaw: data.transcriptRaw ?? "",
     });
     setPanelistForms(
@@ -371,6 +385,42 @@ export default function EventDetailPage() {
       setMessage({ type: "error", text: data.error ?? "Upload failed" });
     }
     setUploadingThumb(false);
+  }
+
+  async function handleHostHeadshotUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingHostHeadshot(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "host-images");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      setForm((f) => ({ ...f, hostHeadshotUrl: data.url }));
+      setMessage({ type: "success", text: "Host headshot uploaded — save to apply" });
+    } else {
+      setMessage({ type: "error", text: data.error ?? "Upload failed" });
+    }
+    setUploadingHostHeadshot(false);
+  }
+
+  async function handleHostPhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingHostPhoto(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "host-images");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      setForm((f) => ({ ...f, hostPhotoUrl: data.url }));
+      setMessage({ type: "success", text: "Host photo uploaded — save to apply" });
+    } else {
+      setMessage({ type: "error", text: data.error ?? "Upload failed" });
+    }
+    setUploadingHostPhoto(false);
   }
 
   async function handleHeadshotUpload(
@@ -587,6 +637,127 @@ export default function EventDetailPage() {
                 )}
               </div>
             )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Host" defaultOpen={false}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Host name">
+                <input
+                  type="text"
+                  value={form.hostName}
+                  onChange={(e) => setForm((f) => ({ ...f, hostName: e.target.value }))}
+                  className="input"
+                />
+              </Field>
+              <Field label="Host title">
+                <input
+                  type="text"
+                  value={form.hostTitle}
+                  onChange={(e) => setForm((f) => ({ ...f, hostTitle: e.target.value }))}
+                  className="input"
+                />
+              </Field>
+            </div>
+
+            <Field label="Host headshot (square, for Meet the Experts)">
+              {form.hostHeadshotUrl ? (
+                <div className="flex items-start gap-3">
+                  <img
+                    src={form.hostHeadshotUrl}
+                    alt="Host headshot"
+                    className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="text"
+                      value={form.hostHeadshotUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, hostHeadshotUrl: e.target.value }))}
+                      className="input text-xs"
+                    />
+                    <label className="inline-block text-xs text-brand-purple hover:underline cursor-pointer">
+                      {uploadingHostHeadshot ? "Uploading..." : "Replace headshot"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleHostHeadshotUpload}
+                        className="hidden"
+                        disabled={uploadingHostHeadshot}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-gray-600">
+                      {uploadingHostHeadshot ? "Uploading..." : "Click to upload headshot"}
+                    </p>
+                    <p className="text-xs text-gray-400">JPG, PNG, WebP</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleHostHeadshotUpload}
+                    className="hidden"
+                    disabled={uploadingHostHeadshot}
+                  />
+                </label>
+              )}
+            </Field>
+
+            <Field label="Host photo (larger portrait, for Note From Your Host)">
+              {form.hostPhotoUrl ? (
+                <div>
+                  <img
+                    src={form.hostPhotoUrl}
+                    alt="Host photo"
+                    className="w-full max-w-[200px] rounded-lg border border-gray-200 mb-2"
+                  />
+                  <input
+                    type="text"
+                    value={form.hostPhotoUrl}
+                    onChange={(e) => setForm((f) => ({ ...f, hostPhotoUrl: e.target.value }))}
+                    className="input text-xs mb-2"
+                  />
+                  <label className="inline-block text-xs text-brand-purple hover:underline cursor-pointer">
+                    {uploadingHostPhoto ? "Uploading..." : "Replace photo"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleHostPhotoUpload}
+                      className="hidden"
+                      disabled={uploadingHostPhoto}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-gray-600">
+                      {uploadingHostPhoto ? "Uploading..." : "Click to upload photo"}
+                    </p>
+                    <p className="text-xs text-gray-400">JPG, PNG, WebP</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleHostPhotoUpload}
+                    className="hidden"
+                    disabled={uploadingHostPhoto}
+                  />
+                </label>
+              )}
+            </Field>
+
+            <Field label="Note from the host">
+              <textarea
+                value={form.hostNote}
+                onChange={(e) => setForm((f) => ({ ...f, hostNote: e.target.value }))}
+                rows={4}
+                className="input"
+                placeholder="Why I created this event — shown on the registration page"
+              />
+            </Field>
           </CollapsibleSection>
 
           <div>
@@ -859,14 +1030,6 @@ export default function EventDetailPage() {
                 className="input"
               />
             </Field>
-            <Field label="Host name">
-              <input
-                type="text"
-                value={form.hostName}
-                onChange={(e) => setForm((f) => ({ ...f, hostName: e.target.value }))}
-                className="input"
-              />
-            </Field>
             <Field label="Recording URL">
               <input
                 type="text"
@@ -875,13 +1038,13 @@ export default function EventDetailPage() {
                 className="input"
               />
             </Field>
-            <Field label="Note from the host">
-              <textarea
-                value={form.hostNote}
-                onChange={(e) => setForm((f) => ({ ...f, hostNote: e.target.value }))}
-                rows={4}
+            <Field label="Registration page heading">
+              <input
+                type="text"
+                value={form.registrationHeading}
+                onChange={(e) => setForm((f) => ({ ...f, registrationHeading: e.target.value }))}
                 className="input"
-                placeholder="Shown on the registration page"
+                placeholder="Final CTA heading on /register"
               />
             </Field>
             <Field label="Free gifts public until">
@@ -910,7 +1073,7 @@ export default function EventDetailPage() {
             <Field label="Public URL">
               {slugEditing ? (
                 <div className="flex gap-2 items-center">
-                  <span className="text-xs text-gray-400 shrink-0">…/events/</span>
+                  <span className="text-xs text-gray-400 shrink-0">…/</span>
                   <input
                     type="text"
                     value={form.slug}
@@ -918,6 +1081,7 @@ export default function EventDetailPage() {
                     className="input flex-1"
                     autoFocus
                   />
+                  <span className="text-xs text-gray-400 shrink-0">/gifts</span>
                   <button
                     type="button"
                     onClick={() => setSlugEditing(false)}
@@ -929,7 +1093,7 @@ export default function EventDetailPage() {
               ) : (
                 <div className="flex items-center gap-2">
                   {form.slug ? (
-                    <span className="text-xs text-gray-500 truncate">/events/{form.slug}</span>
+                    <span className="text-xs text-gray-500 truncate">/{form.slug}/gifts</span>
                   ) : (
                     <span className="text-xs text-gray-400">No slug set</span>
                   )}

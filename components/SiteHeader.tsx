@@ -11,10 +11,10 @@ export default function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6">
           <Link
-            href="/events"
+            href="/register"
             className="text-sm text-gray-300 hover:text-white transition-colors hidden sm:block"
           >
-            Events
+            Register
           </Link>
         </nav>
       </div>

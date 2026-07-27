@@ -49,7 +49,7 @@ export async function getPublicEvent(idOrSlug: string) {
 export type PublicEvent = NonNullable<Awaited<ReturnType<typeof getPublicEvent>>>;
 
 // Separate from getPublicEvent -- deliberately not shared, since the
-// shape genuinely differs: this needs panelist titles/hostNote for
+// shape genuinely differs: this needs panelist titles/bio/hostNote for
 // the registration page and has no reason to touch ToolEntry/gift
 // data at all. Not gated on publishStatus: that field describes the
 // post-event AI-content pipeline (draft -> ai_generated -> approved
@@ -57,30 +57,48 @@ export type PublicEvent = NonNullable<Awaited<ReturnType<typeof getPublicEvent>>
 // registration" -- an upcoming event being set up wouldn't have been
 // through that pipeline yet. Visibility is controlled by the admin
 // choosing who gets the link.
+const REGISTRATION_EVENT_SELECT = {
+  id: true,
+  slug: true,
+  titleOriginal: true,
+  titleYoutube: true,
+  descriptionWebsite: true,
+  eventDate: true,
+  hostName: true,
+  hostTitle: true,
+  hostHeadshotUrl: true,
+  hostPhotoUrl: true,
+  hostNote: true,
+  registrationHeading: true,
+  panelists: {
+    select: {
+      id: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      headshotUrl: true,
+      bio: true,
+    },
+  },
+} as const;
+
 export async function getPublicEventForRegistration(idOrSlug: string) {
   return prisma.event.findFirst({
     where: {
       OR: [{ id: idOrSlug }, { slug: idOrSlug }],
     },
-    select: {
-      id: true,
-      slug: true,
-      titleOriginal: true,
-      titleYoutube: true,
-      descriptionWebsite: true,
-      eventDate: true,
-      hostName: true,
-      hostNote: true,
-      panelists: {
-        select: {
-          id: true,
-          name: true,
-          titleByline: true,
-          titleAreaOfExpertise: true,
-          headshotUrl: true,
-        },
-      },
-    },
+    select: REGISTRATION_EVENT_SELECT,
+  });
+}
+
+// The permanent /register URL always resolves to whichever event is
+// soonest in the future -- not gated by publishStatus, same reasoning
+// as above.
+export async function getSoonestUpcomingEvent() {
+  return prisma.event.findFirst({
+    where: { eventDate: { gte: new Date() } },
+    orderBy: { eventDate: "asc" },
+    select: REGISTRATION_EVENT_SELECT,
   });
 }
 

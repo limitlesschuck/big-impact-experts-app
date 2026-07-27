@@ -60,9 +60,13 @@ const EVENT_ALLOWED = [
   "slug",
   "eventDate",
   "hostName",
+  "hostTitle",
+  "hostHeadshotUrl",
+  "hostPhotoUrl",
   "recordingUrl",
   "giftPublicUntil",
   "hostNote",
+  "registrationHeading",
   "transcriptRaw",
   "transcriptCleaned",
 ];
