@@ -28,8 +28,17 @@ function Unit({ value, label, orange = false }: { value: number; label: string; 
   );
 }
 
+// Mirrors Unit's digit + label structure exactly (down to the invisible
+// label-sized spacer) so the colon's digit line lands at the same height
+// as the surrounding digits regardless of the configured font size --
+// a fixed margin nudge would only stay correct for one specific size.
 function Colon() {
-  return <span className="rp-countdown-digit font-bold text-white/25 -mt-5 sm:-mt-6">:</span>;
+  return (
+    <div className="flex flex-col items-center" aria-hidden="true">
+      <span className="rp-countdown-digit font-bold text-white/25">:</span>
+      <span className="rp-countdown-label font-semibold mt-2 invisible">:</span>
+    </div>
+  );
 }
 
 interface CountdownBarProps {
