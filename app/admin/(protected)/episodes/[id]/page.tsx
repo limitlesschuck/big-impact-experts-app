@@ -89,6 +89,7 @@ const GUIDE_PROGRESS_MESSAGES = [
 ];
 const GUIDE_PROGRESS_STEP_MS = 12000;
 const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minutes...";
+const GUIDE_GENERATION_CLIENT_TIMEOUT_MS = 180_000;
 
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
@@ -309,39 +310,54 @@ export default function EventDetailPage() {
       return rest;
     });
     startGuideProgress(panelistId);
-    const res = await fetch(
-      `/api/admin/episodes/${id}/generate-guide`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          panelistId,
-          includePastAppearances: includePastFor[panelistId] ?? false,
-        }),
+    try {
+      const res = await fetch(
+        `/api/admin/episodes/${id}/generate-guide`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            panelistId,
+            includePastAppearances: includePastFor[panelistId] ?? false,
+          }),
+          signal: AbortSignal.timeout(GUIDE_GENERATION_CLIENT_TIMEOUT_MS),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.generated) {
+        updatePanelist(panelistId, {
+          guideBio: data.generated.bio ?? "",
+          guideFrameworks: data.generated.frameworks ?? "",
+          guideTakeaways: data.generated.takeaways ?? "",
+          guideQuotes: data.generated.quotes ?? "",
+          guideActionItems: data.generated.actionItems ?? "",
+          guidePdfUrl: "",
+        });
+        setGuideResults((r) => ({
+          ...r,
+          [panelistId]: { type: "success", text: "Guide generated — review and save" },
+        }));
+      } else {
+        setGuideResults((r) => ({
+          ...r,
+          [panelistId]: { type: "error", text: data.error ?? "Guide generation failed" },
+        }));
       }
-    );
-    const data = await res.json();
-    if (res.ok && data.generated) {
-      updatePanelist(panelistId, {
-        guideBio: data.generated.bio ?? "",
-        guideFrameworks: data.generated.frameworks ?? "",
-        guideTakeaways: data.generated.takeaways ?? "",
-        guideQuotes: data.generated.quotes ?? "",
-        guideActionItems: data.generated.actionItems ?? "",
-        guidePdfUrl: "",
-      });
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === "TimeoutError";
       setGuideResults((r) => ({
         ...r,
-        [panelistId]: { type: "success", text: "Guide generated — review and save" },
+        [panelistId]: {
+          type: "error",
+          text: timedOut
+            ? "Generation timed out after 3 minutes — please try again"
+            : "Guide generation failed — please try again",
+        },
       }));
-    } else {
-      setGuideResults((r) => ({
-        ...r,
-        [panelistId]: { type: "error", text: data.error ?? "Guide generation failed" },
-      }));
+    } finally {
+      stopGuideProgress(panelistId);
+      setGeneratingGuideFor(null);
     }
-    stopGuideProgress(panelistId);
-    setGeneratingGuideFor(null);
   }
 
   async function handleShortenBio(panelistId: string) {

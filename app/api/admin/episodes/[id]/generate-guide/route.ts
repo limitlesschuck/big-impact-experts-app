@@ -70,32 +70,41 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  await prisma.panelist.update({
-    where: { id: panelist.id },
-    data: {
-      guideBio: generated.bio,
-      guideFrameworks: generated.frameworks,
-      guideTakeaways: generated.takeaways,
-      guideQuotes: generated.quotes,
-      guideActionItems: generated.actionItems,
-      guidePdfUrl: null,
-    },
-  });
+  try {
+    await prisma.panelist.update({
+      where: { id: panelist.id },
+      data: {
+        guideBio: generated.bio,
+        guideFrameworks: generated.frameworks,
+        guideTakeaways: generated.takeaways,
+        guideQuotes: generated.quotes,
+        guideActionItems: generated.actionItems,
+        guidePdfUrl: null,
+      },
+    });
 
-  const promptDescription =
-    pastMatches.length > 0
-      ? `Guide generation for panelist ${panelist.name} (aggregated from ${pastMatches.length + 1} appearances)`
-      : `Guide generation for panelist ${panelist.name}`;
+    const promptDescription =
+      pastMatches.length > 0
+        ? `Guide generation for panelist ${panelist.name} (aggregated from ${pastMatches.length + 1} appearances)`
+        : `Guide generation for panelist ${panelist.name}`;
 
-  await prisma.aiContentLog.create({
-    data: {
-      panelistId: panelist.id,
-      provider: "anthropic",
-      contentType: "guide",
-      prompt: promptDescription,
-      output: JSON.stringify(generated),
-    },
-  });
+    await prisma.aiContentLog.create({
+      data: {
+        panelistId: panelist.id,
+        provider: "anthropic",
+        contentType: "guide",
+        prompt: promptDescription,
+        output: JSON.stringify(generated),
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Guide save error:", error);
+    return NextResponse.json(
+      { error: `Guide was generated but failed to save — ${message}` },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ generated });
 }

@@ -18,6 +18,18 @@ export interface GeneratedGuideContent {
   actionItems: string;
 }
 
+const GUIDE_GENERATION_TIMEOUT_MS = 150_000;
+
+// Claude sometimes returns a field as a real JSON array (e.g. when the
+// prompt says "format as a simple list") instead of the formatted string
+// the schema expects -- `JSON.parse(...) as GeneratedGuideContent` doesn't
+// catch that at runtime, so every field is coerced through here before use.
+function toGuideFieldString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(String).join("\n");
+  return value == null ? "" : String(value);
+}
+
 export async function generateGuideContent(params: {
   panelistName: string;
   panelistBio: string | null;
@@ -52,19 +64,28 @@ Generate a structured guide and return ONLY valid JSON with no markdown, no code
   "actionItems": "A practical checklist of 8-12 action items members can implement immediately based on this segment. Each item should be specific and actionable, starting with a verb. Format as a simple list."
 }`;
 
-  const res = await fetch(CLAUDE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(CLAUDE_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 3000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+      signal: AbortSignal.timeout(GUIDE_GENERATION_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("Claude took too long to respond — please try again");
+    }
+    throw error;
+  }
 
   if (!res.ok) {
     const error = await res.text();
@@ -74,12 +95,21 @@ Generate a structured guide and return ONLY valid JSON with no markdown, no code
   const data = await res.json();
   const text = data.content?.[0]?.text ?? "";
 
+  let parsed: Record<string, unknown>;
   try {
     const cleaned = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(cleaned) as GeneratedGuideContent;
+    parsed = JSON.parse(cleaned);
   } catch {
     throw new Error(`Failed to parse guide response: ${text.slice(0, 200)}`);
   }
+
+  return {
+    bio: toGuideFieldString(parsed.bio),
+    frameworks: toGuideFieldString(parsed.frameworks),
+    takeaways: toGuideFieldString(parsed.takeaways),
+    quotes: toGuideFieldString(parsed.quotes),
+    actionItems: toGuideFieldString(parsed.actionItems),
+  };
 }
 
 // Truncates at a hard character limit without cutting a word in half --
