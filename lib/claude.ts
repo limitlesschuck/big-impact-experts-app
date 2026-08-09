@@ -21,20 +21,26 @@ export interface GeneratedGuideContent {
 export async function generateGuideContent(params: {
   panelistName: string;
   panelistBio: string | null;
-  transcriptSegment: string | null;
+  transcriptSegments: { label: string; text: string }[];
 }): Promise<GeneratedGuideContent> {
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) throw new Error("CLAUDE_API_KEY not set");
 
-  const contentSource = params.transcriptSegment
-    ? `TRANSCRIPT SEGMENT:\n${params.transcriptSegment.slice(0, 10000)}`
-    : `BIO:\n${params.panelistBio ?? "Not provided"}`;
+  const validSegments = params.transcriptSegments.filter((s) => s.text.trim());
+  const contentSource =
+    validSegments.length > 0
+      ? validSegments.map((s) => `--- ${s.label} ---\n${s.text.slice(0, 10000)}`).join("\n\n")
+      : `BIO:\n${params.panelistBio ?? "Not provided"}`;
+  const multiSegmentNote =
+    validSegments.length > 1
+      ? "\n\nNote: this source material spans multiple separate appearances by this panelist -- synthesize the best material across all of them into ONE cohesive guide; don't repeat a framework, takeaway, or quote that shows up in more than one segment."
+      : "";
 
   const prompt = `You are an expert content creator for a monthly expert panel event. Your job is to extract and structure the most valuable content from a panelist's transcript segment into a downloadable guide for members.
 
 Panelist: ${params.panelistName}
 
-${contentSource}
+${contentSource}${multiSegmentNote}
 
 Generate a structured guide and return ONLY valid JSON with no markdown, no code fences, no preamble. Note: the source material above may be long -- that does not mean every field should be long. Follow each field's length limit exactly regardless of how much source content is available.
 

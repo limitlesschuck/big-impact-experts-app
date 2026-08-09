@@ -38,7 +38,49 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(event);
+  // Repeat-panelist detection for guide aggregation: one query for the
+  // whole event (not one per panelist) that finds other Panelist rows
+  // sharing an email with any panelist here, from other events.
+  const nonEmptyEmails = Array.from(
+    new Set(
+      event.panelists
+        .map((p) => p.email?.trim())
+        .filter((e): e is string => !!e)
+    )
+  );
+
+  const pastAppearancesByEmail = new Map<
+    string,
+    { id: string; titleOriginal: string; eventDate: Date }[]
+  >();
+  if (nonEmptyEmails.length > 0) {
+    const matches = await prisma.panelist.findMany({
+      where: {
+        email: { in: nonEmptyEmails, mode: "insensitive" },
+        eventId: { not: params.id },
+      },
+      select: {
+        email: true,
+        event: { select: { id: true, titleOriginal: true, eventDate: true } },
+      },
+    });
+    for (const m of matches) {
+      const key = m.email!.trim().toLowerCase();
+      const list = pastAppearancesByEmail.get(key) ?? [];
+      list.push(m.event);
+      pastAppearancesByEmail.set(key, list);
+    }
+  }
+
+  const panelistsWithAppearances = event.panelists.map((p) => {
+    const key = p.email?.trim().toLowerCase();
+    return {
+      ...p,
+      pastAppearances: key ? pastAppearancesByEmail.get(key) ?? [] : [],
+    };
+  });
+
+  return NextResponse.json({ ...event, panelists: panelistsWithAppearances });
 }
 
 const EVENT_ALLOWED = [

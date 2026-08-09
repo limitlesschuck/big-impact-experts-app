@@ -33,6 +33,7 @@ interface Panelist {
   guideActionItems: string | null;
   guidePdfUrl: string | null;
   toolEntry: ToolEntry | null;
+  pastAppearances: { id: string; titleOriginal: string; eventDate: string }[];
 }
 
 interface Event {
@@ -116,6 +117,7 @@ export default function EventDetailPage() {
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
   const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null);
   const [shorteningBioFor, setShorteningBioFor] = useState<string | null>(null);
+  const [includePastFor, setIncludePastFor] = useState<Record<string, boolean>>({});
   const [guideResults, setGuideResults] = useState<
     Record<string, { type: "success" | "error"; text: string }>
   >({});
@@ -312,7 +314,10 @@ export default function EventDetailPage() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ panelistId }),
+        body: JSON.stringify({
+          panelistId,
+          includePastAppearances: includePastFor[panelistId] ?? false,
+        }),
       }
     );
     const data = await res.json();
@@ -1001,6 +1006,23 @@ export default function EventDetailPage() {
                     </div>
 
                     <div className="pt-2 border-t border-gray-100">
+                      {pf.pastAppearances.length > 0 && (
+                        <label className="flex items-start gap-2 mb-3 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={includePastFor[p.id] ?? false}
+                            onChange={(e) =>
+                              setIncludePastFor((s) => ({ ...s, [p.id]: e.target.checked }))
+                            }
+                            className="mt-0.5"
+                          />
+                          <span>
+                            Include content from {pf.name || "this panelist"}&rsquo;s past
+                            appearances ({pf.pastAppearances.length} event
+                            {pf.pastAppearances.length === 1 ? "" : "s"})
+                          </span>
+                        </label>
+                      )}
                       <div className="flex flex-col sm:flex-row gap-2 mb-2">
                         <button
                           type="button"
