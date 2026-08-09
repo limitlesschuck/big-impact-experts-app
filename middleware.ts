@@ -6,11 +6,13 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    const isLoginPage = pathname === "/admin/login";
+    const isAdminLoginPage = pathname === "/admin/login";
     const isAdminRoute = pathname.startsWith("/admin");
+    const isMemberLoginPage = pathname === "/login";
+    const isMemberRoute = pathname.startsWith("/dashboard");
 
-    if (isLoginPage) {
-      if (token) {
+    if (isAdminLoginPage) {
+      if (token?.userType === "admin") {
         const url = req.nextUrl.clone();
         url.pathname = "/admin";
         return NextResponse.redirect(url);
@@ -18,7 +20,19 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    if (isAdminRoute && !token) {
+    if (isMemberLoginPage) {
+      if (token?.userType === "member") {
+        const url = req.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
+      return NextResponse.next();
+    }
+
+    // userType (not just token presence) gates both areas -- a Member
+    // session is a valid, truthy token and must not grant /admin access,
+    // same for an admin session against /dashboard.
+    if (isAdminRoute && token?.userType !== "admin") {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
       return NextResponse.redirect(url);
@@ -34,6 +48,12 @@ export default withAuth(
       }
     }
 
+    if (isMemberRoute && token?.userType !== "member") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
     return NextResponse.next();
   },
   {
@@ -44,5 +64,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/login"],
 };
