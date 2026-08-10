@@ -116,6 +116,11 @@ export default function EventDetailPage() {
   const [uploadingTranscript, setUploadingTranscript] = useState(false);
   const [uploadingHeadshotFor, setUploadingHeadshotFor] = useState<string | null>(null);
   const [uploadingClipFor, setUploadingClipFor] = useState<string | null>(null);
+  // Only relevant while a panelist's clipUrl is empty -- which entry
+  // method the "Video clip" field shows. Once clipUrl has any value it
+  // falls into the existing populated-state branch (preview + editable
+  // URL input + replace-via-upload), regardless of how it got set.
+  const [clipUrlMode, setClipUrlMode] = useState<Record<string, boolean>>({});
   const [uploadingHostHeadshot, setUploadingHostHeadshot] = useState(false);
   const [uploadingHostPhoto, setUploadingHostPhoto] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
@@ -1039,23 +1044,66 @@ export default function EventDetailPage() {
                           </label>
                         </div>
                       ) : (
-                        <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
-                          <div className="text-center">
-                            <p className="text-xs font-medium text-gray-600">
-                              {uploadingClipFor === p.id ? "Uploading..." : "Click to upload video clip"}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              MP4 or WebM, up to {Math.round(CLIP_MAX_BYTES / (1024 * 1024))}MB
-                            </p>
+                        <div>
+                          <div className="flex gap-1 mb-2">
+                            <button
+                              type="button"
+                              onClick={() => setClipUrlMode((m) => ({ ...m, [p.id]: false }))}
+                              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                                !clipUrlMode[p.id]
+                                  ? "bg-gray-900 text-white"
+                                  : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              Upload
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setClipUrlMode((m) => ({ ...m, [p.id]: true }))}
+                              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                                clipUrlMode[p.id]
+                                  ? "bg-gray-900 text-white"
+                                  : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              Paste URL
+                            </button>
                           </div>
-                          <input
-                            type="file"
-                            accept="video/mp4,video/webm"
-                            onChange={(e) => handleClipUpload(p.id, e)}
-                            className="hidden"
-                            disabled={uploadingClipFor === p.id}
-                          />
-                        </label>
+
+                          {clipUrlMode[p.id] ? (
+                            <div>
+                              <input
+                                type="text"
+                                value={pf.clipUrl ?? ""}
+                                onChange={(e) => updatePanelist(p.id, { clipUrl: e.target.value })}
+                                placeholder="https://.../clip.mp4"
+                                className="input text-xs"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">
+                                Must be a direct link to an MP4/WebM file — page links (YouTube,
+                                Vimeo, etc.) won&rsquo;t play here.
+                              </p>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                              <div className="text-center">
+                                <p className="text-xs font-medium text-gray-600">
+                                  {uploadingClipFor === p.id ? "Uploading..." : "Click to upload video clip"}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  MP4 or WebM, up to {Math.round(CLIP_MAX_BYTES / (1024 * 1024))}MB
+                                </p>
+                              </div>
+                              <input
+                                type="file"
+                                accept="video/mp4,video/webm"
+                                onChange={(e) => handleClipUpload(p.id, e)}
+                                className="hidden"
+                                disabled={uploadingClipFor === p.id}
+                              />
+                            </label>
+                          )}
+                        </div>
                       )}
                     </Field>
                     <Field label="Bio">
@@ -1277,12 +1325,13 @@ export default function EventDetailPage() {
                 className="input"
               />
             </Field>
-            <Field label="Recording URL">
+            <Field label="Vimeo replay URL">
               <input
                 type="text"
                 value={form.recordingUrl}
                 onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
                 className="input"
+                placeholder="https://vimeo.com/123456789"
               />
             </Field>
             <Field label="Hero subheading">

@@ -201,13 +201,13 @@ export default function NewEventPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Recording URL</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Vimeo replay URL</label>
               <input
                 type="text"
                 value={form.recordingUrl}
                 onChange={(e) => setForm((f) => ({ ...f, recordingUrl: e.target.value }))}
                 className="input"
-                placeholder="Zoom/YouTube replay link"
+                placeholder="https://vimeo.com/123456789"
               />
             </div>
           </div>

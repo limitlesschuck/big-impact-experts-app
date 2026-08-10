@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import { getPublicEvent, isGiftPublicWindow } from "@/lib/eventAccess";
 import { normalizeToParagraph } from "@/lib/textFormatting";
+import { parseVimeoUrl, buildVimeoEmbedUrl } from "@/lib/vimeo";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function EventDetailPage({
   }
 
   const giftsAvailable = event.panelists.some((p) => p.toolEntry?.freeGiftTitle);
+  const vimeo = event.recordingUrl ? parseVimeoUrl(event.recordingUrl) : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -37,14 +39,28 @@ export default async function EventDetailPage({
         {event.recordingUrl && (
           <div className="mb-12">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Replay</h2>
-            <a
-              href={event.recordingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-            >
-              Watch the replay →
-            </a>
+            {vimeo ? (
+              <div className="relative w-full pb-[56.25%] h-0 rounded-lg overflow-hidden bg-black">
+                <iframe
+                  src={buildVimeoEmbedUrl(vimeo)}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  className="absolute top-0 left-0 w-full h-full"
+                />
+              </div>
+            ) : (
+              // Not a parseable Vimeo URL (old non-Vimeo value, or
+              // something malformed) -- fall back to a plain link rather
+              // than showing nothing or erroring.
+              <a
+                href={event.recordingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
+                Watch the replay →
+              </a>
+            )}
           </div>
         )}
 
