@@ -22,8 +22,16 @@ const IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 // excluded: most non-Safari browsers won't reliably play it through a
 // plain <video> tag, and this route has no transcoding step to fall back
 // on. MP4/WebM only, so "just point <video> at the URL" actually works.
+// TEMPORARY: this route buffers the whole request body in memory
+// (req.formData() + file.arrayBuffer()) before ever writing to R2, which
+// OOM-killed the container on a 200MB video upload and crash-looped the
+// whole service (Railway logs: "Ready" then "Stopping Container" ~3s
+// later, mid-request). Capped low here as an immediate stopgap while
+// panelist-clips moves to a presigned direct-to-R2 upload that never
+// routes bytes through this process -- raise this back up once that's in
+// place, since memory usage will no longer scale with file size.
 const VIDEO_TYPES = ["video/mp4", "video/webm"];
-const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200MB
+const VIDEO_MAX_BYTES = 25 * 1024 * 1024; // 25MB
 
 const FOLDER_RULES: Record<string, { types: string[]; maxBytes: number; label: string }> = {
   "panelist-clips": { types: VIDEO_TYPES, maxBytes: VIDEO_MAX_BYTES, label: "MP4 or WebM video" },

@@ -92,7 +92,9 @@ const GUIDE_PROGRESS_STEP_MS = 12000;
 const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minutes...";
 const GUIDE_GENERATION_CLIENT_TIMEOUT_MS = 180_000;
 const CLIP_ALLOWED_TYPES = ["video/mp4", "video/webm"];
-const CLIP_MAX_BYTES = 200 * 1024 * 1024;
+// TEMPORARY: matches the stopgap cap in /api/admin/upload -- see that
+// route for why. Raise once panelist-clips uploads directly to R2.
+const CLIP_MAX_BYTES = 25 * 1024 * 1024;
 
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
@@ -538,7 +540,7 @@ export default function EventDetailPage() {
       return;
     }
     if (file.size > CLIP_MAX_BYTES) {
-      setMessage({ type: "error", text: "Video is too large (max 200MB)" });
+      setMessage({ type: "error", text: "Video is too large (max 25MB)" });
       return;
     }
 
@@ -1015,7 +1017,7 @@ export default function EventDetailPage() {
                             <p className="text-xs font-medium text-gray-600">
                               {uploadingClipFor === p.id ? "Uploading..." : "Click to upload video clip"}
                             </p>
-                            <p className="text-xs text-gray-400">MP4 or WebM, up to 200MB</p>
+                            <p className="text-xs text-gray-400">MP4 or WebM, up to 25MB</p>
                           </div>
                           <input
                             type="file"
