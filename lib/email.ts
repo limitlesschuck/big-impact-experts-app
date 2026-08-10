@@ -27,3 +27,24 @@ export async function sendWelcomeEmail(email: string, setPasswordUrl: string): P
     throw new Error(`Resend error sending welcome email: ${error.message}`);
   }
 }
+
+export async function sendPasswordResetEmail(email: string, setPasswordUrl: string): Promise<void> {
+  const resend = getResendClient();
+
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: email,
+    subject: "Reset your password",
+    html: `
+      <p>We received a request to reset your Big Impact Experts password.</p>
+      <p>Click the link below to choose a new password.</p>
+      <p><a href="${setPasswordUrl}">Reset your password</a></p>
+      <p>This link expires in 48 hours. If it's expired by the time you click it, request a new one from the login page.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`Resend error sending password reset email: ${error.message}`);
+  }
+}

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "@/lib/email";
 import type { Member } from "@prisma/client";
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 48 * 60 * 60 * 1000;
@@ -25,6 +25,28 @@ function oneYearFrom(date: Date): Date {
   return d;
 }
 
+export function buildSetPasswordUrl(rawToken: string): string {
+  return `${baseUrl()}/set-password?token=${rawToken}`;
+}
+
+// Shared by every flow that needs to hand a member a fresh set-password
+// link (initial welcome email, forgot-password) -- generates a token,
+// persists its hash with a fresh TTL, and returns the raw value for the
+// caller to put in a URL. Kept separate from actually sending an email,
+// since different flows send different copy to a member in a different
+// state ("welcome" vs. "reset") for the same underlying token mechanism.
+export async function issuePasswordResetToken(memberId: string): Promise<string> {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  await prisma.member.update({
+    where: { id: memberId },
+    data: {
+      passwordResetToken: hashResetToken(rawToken),
+      passwordResetExpires: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
+    },
+  });
+  return rawToken;
+}
+
 // Shared by both member-creation paths (webhook + admin-manual) so they
 // stay identical rather than drifting into two slightly different flows.
 // Idempotent: an existing Member for this email is left untouched and no
@@ -42,7 +64,6 @@ export async function createMemberAndSendWelcomeEmail(
   }
 
   const placeholderPassword = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 12);
-  const rawToken = crypto.randomBytes(32).toString("hex");
   // Captured once so expiresAt is exactly createdAt + 1 year, not just
   // approximately (Prisma's own @default(now()) would be a separate,
   // independently-evaluated timestamp otherwise).
@@ -54,15 +75,27 @@ export async function createMemberAndSendWelcomeEmail(
       firstName: options.firstName?.trim() || null,
       lastName: options.lastName?.trim() || null,
       password: placeholderPassword,
-      passwordResetToken: hashResetToken(rawToken),
-      passwordResetExpires: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
       createdAt: now,
       expiresAt: oneYearFrom(now),
     },
   });
 
-  const setPasswordUrl = `${baseUrl()}/set-password?token=${rawToken}`;
-  await sendWelcomeEmail(email, setPasswordUrl);
+  const rawToken = await issuePasswordResetToken(member.id);
+  await sendWelcomeEmail(email, buildSetPasswordUrl(rawToken));
 
   return { member, created: true };
+}
+
+// Enumeration-safe by construction: silently no-ops for an unknown email
+// so the caller can always show the same generic message regardless of
+// whether a match was found. No check on member.password either, so a
+// member who never completed the original welcome flow gets the exact
+// same treatment as one who already has a real password.
+export async function requestPasswordReset(rawEmail: string): Promise<void> {
+  const email = rawEmail.trim().toLowerCase();
+  const member = await prisma.member.findUnique({ where: { email } });
+  if (!member) return;
+
+  const rawToken = await issuePasswordResetToken(member.id);
+  await sendPasswordResetEmail(email, buildSetPasswordUrl(rawToken));
 }

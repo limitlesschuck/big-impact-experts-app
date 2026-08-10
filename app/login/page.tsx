@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function MemberLoginPage() {
   const router = useRouter();
@@ -77,6 +78,14 @@ export default function MemberLoginPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 placeholder="••••••••"
               />
+              <p className="mt-2 text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-gray-500 hover:text-gray-900 hover:underline"
+                >
+                  Forgot your password?
+                </Link>
+              </p>
             </div>
 
             {error && (
