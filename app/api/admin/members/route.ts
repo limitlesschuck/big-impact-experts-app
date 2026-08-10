@@ -12,7 +12,16 @@ export async function GET() {
 
   const members = await prisma.member.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, status: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      status: true,
+      createdAt: true,
+      expiresAt: true,
+      lastLoginAt: true,
+    },
   });
 
   return NextResponse.json({ members });
@@ -29,9 +38,14 @@ export async function POST(req: NextRequest) {
   if (!email) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
+  const firstName = typeof body?.firstName === "string" ? body.firstName : undefined;
+  const lastName = typeof body?.lastName === "string" ? body.lastName : undefined;
 
   try {
-    const { member, created } = await createMemberAndSendWelcomeEmail(email);
+    const { member, created } = await createMemberAndSendWelcomeEmail(email, {
+      firstName,
+      lastName,
+    });
     return NextResponse.json({
       member: { id: member.id, email: member.email, status: member.status },
       created,

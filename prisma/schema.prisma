@@ -72,11 +72,21 @@ model User {
 model Member {
   id                   String    @id @default(cuid())
   email                String    @unique
+  firstName            String?
+  lastName             String?
   password             String?
   passwordResetToken   String?
   passwordResetExpires DateTime?
   systemeTag           String?
+  // Doubles as the manual admin disable switch ("disabled") and, in the
+  // future, the target of a Systeme.io tag-driven webhook (active/
+  // cancelled) that doesn't exist yet. Reusing one field is a known,
+  // deliberate tradeoff -- when that webhook is built, it needs a
+  // precedence rule against a manual disable (or a split into a separate
+  // field) so the two writers can't silently undo each other.
   status               String    @default("active")
+  expiresAt            DateTime?
+  lastLoginAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

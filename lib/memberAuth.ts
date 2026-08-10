@@ -19,13 +19,20 @@ function baseUrl(): string {
   return url.replace(/\/$/, "");
 }
 
+function oneYearFrom(date: Date): Date {
+  const d = new Date(date);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
 // Shared by both member-creation paths (webhook + admin-manual) so they
 // stay identical rather than drifting into two slightly different flows.
 // Idempotent: an existing Member for this email is left untouched and no
 // email is re-sent, since webhook retries are normal and shouldn't spam
 // duplicate welcome emails or hit the email @unique constraint.
 export async function createMemberAndSendWelcomeEmail(
-  rawEmail: string
+  rawEmail: string,
+  options: { firstName?: string; lastName?: string } = {}
 ): Promise<{ member: Member; created: boolean }> {
   const email = rawEmail.trim().toLowerCase();
 
@@ -36,13 +43,21 @@ export async function createMemberAndSendWelcomeEmail(
 
   const placeholderPassword = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 12);
   const rawToken = crypto.randomBytes(32).toString("hex");
+  // Captured once so expiresAt is exactly createdAt + 1 year, not just
+  // approximately (Prisma's own @default(now()) would be a separate,
+  // independently-evaluated timestamp otherwise).
+  const now = new Date();
 
   const member = await prisma.member.create({
     data: {
       email,
+      firstName: options.firstName?.trim() || null,
+      lastName: options.lastName?.trim() || null,
       password: placeholderPassword,
       passwordResetToken: hashResetToken(rawToken),
       passwordResetExpires: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
+      createdAt: now,
+      expiresAt: oneYearFrom(now),
     },
   });
 

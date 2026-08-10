@@ -72,7 +72,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email.trim().toLowerCase() },
         });
 
-        if (!member || !member.password) {
+        if (!member || !member.password || member.status === "disabled") {
           return null;
         }
 
@@ -84,6 +84,11 @@ export const authOptions: NextAuthOptions = {
         if (!passwordValid) {
           return null;
         }
+
+        await prisma.member.update({
+          where: { id: member.id },
+          data: { lastLoginAt: new Date() },
+        });
 
         return {
           id: member.id,
