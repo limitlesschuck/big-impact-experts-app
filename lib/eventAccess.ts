@@ -109,3 +109,130 @@ export async function getSoonestUpcomingEvent() {
 export type PublicEventForRegistration = NonNullable<
   Awaited<ReturnType<typeof getPublicEventForRegistration>>
 >;
+
+// ── Member Dashboard ─────────────────────────────────────────────────
+// Access is gated purely by Member.status (checked live in
+// app/dashboard/layout.tsx, since a JWT can't carry mutable state) plus
+// eventDate being in the past -- not publishStatus, which tracks the
+// admin's internal AI-content pipeline and is orthogonal to whether a
+// member should be able to see an event they attended, same reasoning
+// as REGISTRATION_EVENT_SELECT above. The past-events gate is re-applied
+// at every level (list, detail, per-expert), not just the list -- a
+// filtered-out list item is not access control if the detail route
+// underneath it doesn't enforce the same rule.
+
+export async function getEpisodeCardImagePreference(): Promise<"youtube_thumbnail" | "cover_art"> {
+  const record = await prisma.siteConfig.findFirst();
+  const config = record?.config as Record<string, unknown> | null;
+  return config?.episodeCardImage === "cover_art" ? "cover_art" : "youtube_thumbnail";
+}
+
+export function pickEpisodeThumbnail(
+  event: { youtubeThumbnailUrl: string | null; coverArtUrl: string | null; thumbnailUrl: string | null },
+  preference: "youtube_thumbnail" | "cover_art"
+): string | null {
+  const preferred = preference === "cover_art" ? event.coverArtUrl : event.youtubeThumbnailUrl;
+  const fallback = preference === "cover_art" ? event.youtubeThumbnailUrl : event.coverArtUrl;
+  return preferred || fallback || event.thumbnailUrl || null;
+}
+
+export async function getMemberDashboardEvents() {
+  return prisma.event.findMany({
+    where: { eventDate: { lt: new Date() } },
+    orderBy: { eventDate: "desc" },
+    select: {
+      id: true,
+      titleOriginal: true,
+      titleYoutube: true,
+      eventDate: true,
+      youtubeThumbnailUrl: true,
+      coverArtUrl: true,
+      thumbnailUrl: true,
+    },
+  });
+}
+
+export type MemberDashboardEventListItem = Awaited<
+  ReturnType<typeof getMemberDashboardEvents>
+>[number];
+
+export async function getMemberDashboardEvent(eventId: string) {
+  return prisma.event.findFirst({
+    where: { id: eventId, eventDate: { lt: new Date() } },
+    select: {
+      id: true,
+      titleOriginal: true,
+      titleYoutube: true,
+      eventDate: true,
+      recordingUrl: true,
+      panelists: {
+        select: {
+          id: true,
+          name: true,
+          titleByline: true,
+          titleAreaOfExpertise: true,
+          headshotUrl: true,
+        },
+      },
+    },
+  });
+}
+
+export type MemberDashboardEvent = NonNullable<Awaited<ReturnType<typeof getMemberDashboardEvent>>>;
+
+export async function getMemberDashboardPanelist(eventId: string, panelistId: string) {
+  return prisma.panelist.findFirst({
+    where: {
+      id: panelistId,
+      eventId,
+      event: { eventDate: { lt: new Date() } },
+    },
+    select: {
+      id: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      clipUrl: true,
+      guidePdfUrl: true,
+      event: { select: { id: true, titleOriginal: true, titleYoutube: true } },
+      toolEntry: {
+        select: {
+          freeGiftTitle: true,
+          freeGiftDescription: true,
+          freeGiftUrl: true,
+          vipGiftTitle: true,
+          vipGiftDescription: true,
+          vipGiftUrl: true,
+        },
+      },
+    },
+  });
+}
+
+export type MemberDashboardPanelist = NonNullable<
+  Awaited<ReturnType<typeof getMemberDashboardPanelist>>
+>;
+
+// Not deduped by email -- rows stay independent per event appearance,
+// matching what was already established for guide aggregation: no
+// canonical-person table, same panelist at three events is three rows
+// (and here, three directory cards, each linking to that specific
+// event's per-expert page).
+export async function getDirectoryPanelists() {
+  return prisma.panelist.findMany({
+    where: { event: { eventDate: { lt: new Date() } } },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      eventId: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      headshotUrl: true,
+      bio: true,
+      shortBio: true,
+    },
+  });
+}
+
+export type DirectoryPanelist = Awaited<ReturnType<typeof getDirectoryPanelists>>[number];
