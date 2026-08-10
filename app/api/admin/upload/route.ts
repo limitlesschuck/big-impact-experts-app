@@ -15,6 +15,21 @@ const R2 = new S3Client({
 const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "big-impact-experts-media";
 const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL?.replace(/\/$/, "") ?? "";
 
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+
+// video/quicktime (.mov -- what iPhones export by default) is deliberately
+// excluded: most non-Safari browsers won't reliably play it through a
+// plain <video> tag, and this route has no transcoding step to fall back
+// on. MP4/WebM only, so "just point <video> at the URL" actually works.
+const VIDEO_TYPES = ["video/mp4", "video/webm"];
+const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200MB
+
+const FOLDER_RULES: Record<string, { types: string[]; maxBytes: number; label: string }> = {
+  "panelist-clips": { types: VIDEO_TYPES, maxBytes: VIDEO_MAX_BYTES, label: "MP4 or WebM video" },
+};
+const DEFAULT_RULE = { types: IMAGE_TYPES, maxBytes: IMAGE_MAX_BYTES, label: "JPEG, PNG, or WebP image" };
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !["super_admin", "editor"].includes(session.user.role)) {
@@ -29,10 +44,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-  if (!allowedTypes.includes(file.type)) {
+  const rule = FOLDER_RULES[folder] ?? DEFAULT_RULE;
+
+  if (!rule.types.includes(file.type)) {
     return NextResponse.json(
-      { error: "Only JPEG, PNG, and WebP images are allowed" },
+      { error: `Only ${rule.label} files are allowed` },
+      { status: 400 }
+    );
+  }
+
+  if (file.size > rule.maxBytes) {
+    return NextResponse.json(
+      { error: `File is too large (max ${Math.round(rule.maxBytes / (1024 * 1024))}MB)` },
       { status: 400 }
     );
   }

@@ -171,6 +171,7 @@ model Panelist {
   bio                  String?  @db.Text
   shortBio             String?  @db.Text
   headshotUrl          String?
+  clipUrl              String?
   email                String?
   affiliateLink        String?
   swipeCopy            String?  @db.Text

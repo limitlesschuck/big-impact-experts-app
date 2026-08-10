@@ -124,6 +124,7 @@ const PANELIST_ALLOWED = [
   "bio",
   "shortBio",
   "headshotUrl",
+  "clipUrl",
   "email",
   "affiliateLink",
   "swipeCopy",

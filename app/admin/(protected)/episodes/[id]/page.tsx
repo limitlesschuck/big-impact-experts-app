@@ -22,6 +22,7 @@ interface Panelist {
   bio: string | null;
   shortBio: string | null;
   headshotUrl: string | null;
+  clipUrl: string | null;
   email: string | null;
   affiliateLink: string | null;
   swipeCopy: string | null;
@@ -90,6 +91,8 @@ const GUIDE_PROGRESS_MESSAGES = [
 const GUIDE_PROGRESS_STEP_MS = 12000;
 const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minutes...";
 const GUIDE_GENERATION_CLIENT_TIMEOUT_MS = 180_000;
+const CLIP_ALLOWED_TYPES = ["video/mp4", "video/webm"];
+const CLIP_MAX_BYTES = 200 * 1024 * 1024;
 
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
@@ -113,6 +116,7 @@ export default function EventDetailPage() {
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [uploadingTranscript, setUploadingTranscript] = useState(false);
   const [uploadingHeadshotFor, setUploadingHeadshotFor] = useState<string | null>(null);
+  const [uploadingClipFor, setUploadingClipFor] = useState<string | null>(null);
   const [uploadingHostHeadshot, setUploadingHostHeadshot] = useState(false);
   const [uploadingHostPhoto, setUploadingHostPhoto] = useState(false);
   const [generatingGuideFor, setGeneratingGuideFor] = useState<string | null>(null);
@@ -252,6 +256,7 @@ export default function EventDetailPage() {
           bio: p.bio,
           shortBio: p.shortBio,
           headshotUrl: p.headshotUrl,
+          clipUrl: p.clipUrl,
           email: p.email,
           affiliateLink: p.affiliateLink,
           swipeCopy: p.swipeCopy,
@@ -512,6 +517,44 @@ export default function EventDetailPage() {
       setMessage({ type: "error", text: data.error ?? "Upload failed" });
     }
     setUploadingHeadshotFor(null);
+  }
+
+  async function handleClipUpload(
+    panelistId: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    // Fail fast client-side -- for a file this size, discovering a
+    // rejection only after the full upload completes is a much worse
+    // experience than for the small images this route otherwise handles.
+    if (!CLIP_ALLOWED_TYPES.includes(file.type)) {
+      setMessage({
+        type: "error",
+        text: "Only MP4 or WebM video files are allowed (export .mov clips as MP4 first)",
+      });
+      return;
+    }
+    if (file.size > CLIP_MAX_BYTES) {
+      setMessage({ type: "error", text: "Video is too large (max 200MB)" });
+      return;
+    }
+
+    setUploadingClipFor(panelistId);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "panelist-clips");
+    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      updatePanelist(panelistId, { clipUrl: data.url });
+      setMessage({ type: "success", text: "Clip uploaded — save to apply" });
+    } else {
+      setMessage({ type: "error", text: data.error ?? "Upload failed" });
+    }
+    setUploadingClipFor(null);
   }
 
   async function handleTranscriptUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -937,6 +980,49 @@ export default function EventDetailPage() {
                             onChange={(e) => handleHeadshotUpload(p.id, e)}
                             className="hidden"
                             disabled={uploadingHeadshotFor === p.id}
+                          />
+                        </label>
+                      )}
+                    </Field>
+                    <Field label="Video clip">
+                      {pf.clipUrl ? (
+                        <div className="space-y-2">
+                          <video
+                            src={pf.clipUrl}
+                            controls
+                            className="w-full max-w-xs rounded-lg border border-gray-200"
+                          />
+                          <input
+                            type="text"
+                            value={pf.clipUrl}
+                            onChange={(e) => updatePanelist(p.id, { clipUrl: e.target.value })}
+                            className="input text-xs"
+                          />
+                          <label className="inline-block text-xs text-brand-purple hover:underline cursor-pointer">
+                            {uploadingClipFor === p.id ? "Uploading..." : "Replace clip"}
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm"
+                              onChange={(e) => handleClipUpload(p.id, e)}
+                              className="hidden"
+                              disabled={uploadingClipFor === p.id}
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                          <div className="text-center">
+                            <p className="text-xs font-medium text-gray-600">
+                              {uploadingClipFor === p.id ? "Uploading..." : "Click to upload video clip"}
+                            </p>
+                            <p className="text-xs text-gray-400">MP4 or WebM, up to 200MB</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm"
+                            onChange={(e) => handleClipUpload(p.id, e)}
+                            className="hidden"
+                            disabled={uploadingClipFor === p.id}
                           />
                         </label>
                       )}
