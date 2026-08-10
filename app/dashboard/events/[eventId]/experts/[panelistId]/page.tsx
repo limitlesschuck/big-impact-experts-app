@@ -93,6 +93,9 @@ export default async function PanelistDetailPage({
             <p className="text-xs font-semibold text-brand-orange uppercase tracking-wide mb-2">
               Guide
             </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Key frameworks and takeaways from {panelist.name}&rsquo;s session.
+            </p>
             <a
               href={panelist.guidePdfUrl}
               target="_blank"

@@ -46,7 +46,7 @@ export default async function EventDetailPage({
       {event.panelists.length === 0 ? (
         <p className="text-sm text-gray-500">No experts listed for this event.</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {event.panelists.map((p) => (
             <Link
               key={p.id}
