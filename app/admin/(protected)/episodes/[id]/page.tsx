@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { VIDEO_TYPES as CLIP_ALLOWED_TYPES, VIDEO_MAX_BYTES as CLIP_MAX_BYTES } from "@/lib/uploadRules";
 
 interface ToolEntry {
   freeGiftTitle: string | null;
@@ -91,10 +92,6 @@ const GUIDE_PROGRESS_MESSAGES = [
 const GUIDE_PROGRESS_STEP_MS = 12000;
 const GUIDE_PROGRESS_TAIL_MESSAGE = "Still working — this can take a few minutes...";
 const GUIDE_GENERATION_CLIENT_TIMEOUT_MS = 180_000;
-const CLIP_ALLOWED_TYPES = ["video/mp4", "video/webm"];
-// TEMPORARY: matches the stopgap cap in /api/admin/upload -- see that
-// route for why. Raise once panelist-clips uploads directly to R2.
-const CLIP_MAX_BYTES = 25 * 1024 * 1024;
 
 function toDateInputValue(value: string | null): string {
   if (!value) return "";
@@ -540,21 +537,51 @@ export default function EventDetailPage() {
       return;
     }
     if (file.size > CLIP_MAX_BYTES) {
-      setMessage({ type: "error", text: "Video is too large (max 25MB)" });
+      setMessage({
+        type: "error",
+        text: `Video is too large (max ${Math.round(CLIP_MAX_BYTES / (1024 * 1024))}MB)`,
+      });
       return;
     }
 
     setUploadingClipFor(panelistId);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("folder", "panelist-clips");
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    if (res.ok) {
-      updatePanelist(panelistId, { clipUrl: data.url });
+
+    // Two steps: ask the server for a presigned R2 URL (no file bytes in
+    // this request), then PUT the file directly to R2 from the browser --
+    // this process's memory never holds the video at all. See
+    // /api/admin/upload/presign for why this exists instead of the
+    // multipart route the other uploads on this page use.
+    const presignRes = await fetch("/api/admin/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+      }),
+    });
+    const presignData = await presignRes.json();
+
+    if (!presignRes.ok) {
+      setMessage({ type: "error", text: presignData.error ?? "Failed to prepare upload" });
+      setUploadingClipFor(null);
+      return;
+    }
+
+    try {
+      const putRes = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) {
+        throw new Error(`Storage responded with ${putRes.status}`);
+      }
+      updatePanelist(panelistId, { clipUrl: presignData.publicUrl });
       setMessage({ type: "success", text: "Clip uploaded — save to apply" });
-    } else {
-      setMessage({ type: "error", text: data.error ?? "Upload failed" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Direct upload to storage failed";
+      setMessage({ type: "error", text: `Direct upload to storage failed — ${message}` });
     }
     setUploadingClipFor(null);
   }
@@ -1017,7 +1044,9 @@ export default function EventDetailPage() {
                             <p className="text-xs font-medium text-gray-600">
                               {uploadingClipFor === p.id ? "Uploading..." : "Click to upload video clip"}
                             </p>
-                            <p className="text-xs text-gray-400">MP4 or WebM, up to 25MB</p>
+                            <p className="text-xs text-gray-400">
+                              MP4 or WebM, up to {Math.round(CLIP_MAX_BYTES / (1024 * 1024))}MB
+                            </p>
                           </div>
                           <input
                             type="file"
