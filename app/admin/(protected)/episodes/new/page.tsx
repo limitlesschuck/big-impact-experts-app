@@ -34,7 +34,7 @@ const emptyPanelist = (): PanelistForm => ({
   vipGiftUrl: "",
 });
 
-const MAX_PANELISTS = 5;
+const MAX_PANELISTS = 25;
 
 export default function NewEventPage() {
   const router = useRouter();

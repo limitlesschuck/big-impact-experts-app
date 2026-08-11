@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import Papa from "papaparse";
 import { authOptions } from "@/lib/auth";
 
-const MAX_PANELISTS = 5;
+const MAX_PANELISTS = 25;
 
 // Everything in the CSV besides the fields mapped below (Phone, Status,
 // Talk Title/Description, tracking/portal URLs, speaking time choices,
