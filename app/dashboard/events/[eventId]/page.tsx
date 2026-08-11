@@ -57,10 +57,10 @@ export default async function EventDetailPage({
                 <img
                   src={p.headshotUrl}
                   alt={p.name}
-                  className="w-20 h-20 rounded-full object-cover mx-auto mb-2 border border-gray-200 group-hover:border-brand-orange transition-colors"
+                  className="w-full h-auto aspect-square max-w-[250px] max-h-[250px] rounded-xl object-cover mx-auto mb-2 border border-gray-200 group-hover:border-brand-orange transition-colors"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gray-100 mx-auto mb-2" />
+                <div className="w-full aspect-square max-w-[250px] max-h-[250px] rounded-xl bg-gray-100 mx-auto mb-2" />
               )}
               <p className="text-xs font-medium text-gray-900">{p.name}</p>
               {panelistTitle(p) && (

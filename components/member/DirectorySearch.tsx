@@ -33,18 +33,18 @@ export default function DirectorySearch({ panelists }: { panelists: DirectoryPan
             <Link
               key={p.id}
               href={`/dashboard/events/${p.eventId}/experts/${p.id}`}
-              className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4 hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
             >
               {p.headshotUrl ? (
                 <img
                   src={p.headshotUrl}
                   alt={p.name}
-                  className="w-14 h-14 rounded-full object-cover flex-shrink-0"
+                  className="w-full h-auto aspect-square max-w-[250px] max-h-[250px] rounded-xl object-cover mx-auto mb-3"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-gray-100 flex-shrink-0" />
+                <div className="w-full aspect-square max-w-[250px] max-h-[250px] rounded-xl bg-gray-100 mx-auto mb-3" />
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 text-center">
                 <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
                 {panelistTitle(p) && (
                   <p className="text-xs text-brand-orange truncate">{panelistTitle(p)}</p>
