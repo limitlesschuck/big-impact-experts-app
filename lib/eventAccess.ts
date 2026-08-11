@@ -236,3 +236,31 @@ export async function getDirectoryPanelists() {
 }
 
 export type DirectoryPanelist = Awaited<ReturnType<typeof getDirectoryPanelists>>[number];
+
+// Candidate pool for the Expert Match widget. Same past-events gate as
+// the rest of the dashboard, plus guideBio not null -- a panelist with
+// no generated guide content has nothing to ground a recommendation in,
+// so they're excluded from the pool entirely rather than being a
+// candidate that could never legitimately be recommended.
+export async function getExpertMatchPool() {
+  return prisma.panelist.findMany({
+    where: {
+      event: { eventDate: { lt: new Date() } },
+      guideBio: { not: null },
+    },
+    select: {
+      id: true,
+      eventId: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      guideBio: true,
+      guideFrameworks: true,
+      guideTakeaways: true,
+      guideQuotes: true,
+      guideActionItems: true,
+    },
+  });
+}
+
+export type ExpertMatchPoolPanelist = Awaited<ReturnType<typeof getExpertMatchPool>>[number];

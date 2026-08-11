@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import MemberSidebar from "@/components/member/MemberSidebar";
+import ExpertMatchWidget from "@/components/member/ExpertMatchWidget";
 
 export default async function DashboardLayout({
   children,
@@ -32,6 +33,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-brand-bg flex">
       <MemberSidebar user={session.user} />
       <main className="flex-1 min-w-0 p-8">{children}</main>
+      <ExpertMatchWidget />
     </div>
   );
 }

@@ -253,3 +253,209 @@ Generate the following and return ONLY valid JSON with no markdown, no code fenc
     throw new Error(`Failed to parse Claude response: ${text}`);
   }
 }
+
+// ── Expert Match (Member Dashboard) ─────────────────────────────────
+// Shared low-level helper, used only by the two functions below --
+// the three functions above already have their own working fetch+parse
+// logic and are left as-is rather than retrofitted onto this, to avoid
+// touching stable, unrelated code paths for this change.
+async function callClaudeForText(params: {
+  prompt: string;
+  maxTokens: number;
+  timeoutMs: number;
+  timeoutMessage: string;
+}): Promise<string> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) throw new Error("CLAUDE_API_KEY not set");
+
+  let res: Response;
+  try {
+    res = await fetch(CLAUDE_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: params.maxTokens,
+        messages: [{ role: "user", content: params.prompt }],
+      }),
+      signal: AbortSignal.timeout(params.timeoutMs),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error(params.timeoutMessage);
+    }
+    throw error;
+  }
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Claude API error: ${res.status} — ${error}`);
+  }
+
+  const data = await res.json();
+  return data.content?.[0]?.text ?? "";
+}
+
+function parseClaudeJson<T>(text: string): T {
+  try {
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleaned) as T;
+  } catch {
+    throw new Error(`Failed to parse Claude response: ${text.slice(0, 200)}`);
+  }
+}
+
+const EXPERT_MATCH_NARROW_TIMEOUT_MS = 15_000;
+const EXPERT_MATCH_ANSWER_TIMEOUT_MS = 25_000;
+export const MAX_NARROWED_CANDIDATES = 5;
+
+export interface ExpertMatchCandidateSummary {
+  index: number;
+  name: string;
+  title: string;
+  blurb: string;
+}
+
+export interface ExpertMatchCandidateProfile {
+  index: number;
+  name: string;
+  title: string;
+  guideBio: string;
+  guideFrameworks: string;
+  guideTakeaways: string;
+  guideQuotes: string;
+  guideActionItems: string;
+}
+
+export interface ExpertMatchAnswer {
+  matched: boolean;
+  message: string;
+  recommendations: { candidateIndex: number; summary: string }[];
+}
+
+// Step 1: cheap, fast narrowing using only short summaries (not full
+// guide content) for every candidate -- a Claude call rather than plain
+// keyword matching, since a member's question often won't lexically
+// overlap with guide content even when it's topically relevant.
+export async function narrowExpertCandidates(
+  question: string,
+  candidates: ExpertMatchCandidateSummary[]
+): Promise<number[]> {
+  if (candidates.length === 0) return [];
+
+  const roster = candidates
+    .map((c) => `${c.index}. ${c.name}${c.title ? ` — ${c.title}` : ""}: ${c.blurb}`)
+    .join("\n");
+
+  const prompt = `You are narrowing a roster of experts down to the ones plausibly relevant to a member's question, based only on the short summaries below -- you have not seen their full content yet, so only judge plausible topical relevance here.
+
+Member's question: "${question}"
+
+Roster:
+${roster}
+
+Return ONLY valid JSON, no markdown, no preamble:
+{
+  "candidateIndexes": [array of up to ${MAX_NARROWED_CANDIDATES} numbers from the roster above, most plausibly relevant first -- empty array if none plausibly relate to the question]
+}`;
+
+  const text = await callClaudeForText({
+    prompt,
+    maxTokens: 300,
+    timeoutMs: EXPERT_MATCH_NARROW_TIMEOUT_MS,
+    timeoutMessage: "Expert matching took too long to narrow candidates — please try again",
+  });
+
+  const parsed = parseClaudeJson<{ candidateIndexes?: unknown }>(text);
+  const validIndexes = new Set(candidates.map((c) => c.index));
+  const indexes = Array.isArray(parsed.candidateIndexes) ? parsed.candidateIndexes : [];
+  return indexes
+    .filter((i): i is number => typeof i === "number" && validIndexes.has(i))
+    .slice(0, MAX_NARROWED_CANDIDATES);
+}
+
+// Step 2: the real, grounded answer -- only ever given the full guide
+// content of the shortlisted candidates from step 1, never the whole
+// roster. Claude only ever refers to a candidate by its numeric index
+// into the list it was just given here; it's never asked for (and so
+// can never invent) a panelist ID or URL.
+export async function answerExpertMatch(
+  question: string,
+  candidates: ExpertMatchCandidateProfile[]
+): Promise<ExpertMatchAnswer> {
+  if (candidates.length === 0) {
+    return {
+      matched: false,
+      message: "No experts in the current library seem related to that question.",
+      recommendations: [],
+    };
+  }
+
+  const profiles = candidates
+    .map(
+      (c) => `--- Candidate ${c.index}: ${c.name}${c.title ? ` (${c.title})` : ""} ---
+Bio: ${c.guideBio}
+Frameworks: ${c.guideFrameworks}
+Takeaways: ${c.guideTakeaways}
+Quotes: ${c.guideQuotes}
+Action items: ${c.guideActionItems}`
+    )
+    .join("\n\n");
+
+  const prompt = `You are helping a member of an expert-led community find the right expert(s) to help with their question, based ONLY on the guide content below extracted from each expert's session.
+
+Member's question: "${question}"
+
+${profiles}
+
+Strict rules:
+- Only recommend a candidate if their guide content above genuinely, specifically relates to the question -- not a vague or generic connection.
+- Never attribute a stance, opinion, or piece of advice to a candidate that is not actually reflected in their guide content above.
+- If none of the candidates above genuinely fit, say so honestly in "message" and return an empty "recommendations" array -- do not force a recommendation just to have an answer.
+- Base every summary strictly on the guide content shown -- do not add outside knowledge or invent specifics.
+
+Return ONLY valid JSON, no markdown, no preamble:
+{
+  "matched": true or false,
+  "message": "A short, friendly 1-2 sentence intro to the recommendation(s) below, or an honest explanation if nothing fits",
+  "recommendations": [
+    { "candidateIndex": <number from the candidates above>, "summary": "2-3 sentences on why this candidate fits and their relevant approach, grounded strictly in their guide content above" }
+  ]
+}`;
+
+  const text = await callClaudeForText({
+    prompt,
+    maxTokens: 1000,
+    timeoutMs: EXPERT_MATCH_ANSWER_TIMEOUT_MS,
+    timeoutMessage: "Expert matching took too long to generate an answer — please try again",
+  });
+
+  const parsed = parseClaudeJson<{
+    matched?: unknown;
+    message?: unknown;
+    recommendations?: unknown;
+  }>(text);
+
+  const validIndexes = new Set(candidates.map((c) => c.index));
+  const rawRecommendations = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
+  const recommendations = rawRecommendations
+    .filter(
+      (r): r is { candidateIndex: number; summary: string } =>
+        typeof r === "object" &&
+        r !== null &&
+        typeof (r as Record<string, unknown>).candidateIndex === "number" &&
+        validIndexes.has((r as Record<string, unknown>).candidateIndex as number) &&
+        typeof (r as Record<string, unknown>).summary === "string"
+    )
+    .map((r) => ({ candidateIndex: r.candidateIndex, summary: r.summary }));
+
+  return {
+    matched: typeof parsed.matched === "boolean" ? parsed.matched : recommendations.length > 0,
+    message: typeof parsed.message === "string" ? parsed.message : "",
+    recommendations,
+  };
+}
