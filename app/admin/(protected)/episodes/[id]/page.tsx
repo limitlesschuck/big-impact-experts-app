@@ -174,6 +174,49 @@ export default function EventDetailPage() {
   });
 
   const [panelistForms, setPanelistForms] = useState<Record<string, Panelist>>({});
+  // Panelist rows added via "+ Add panelist" but not yet saved -- kept
+  // separate from event.panelists (server-fetched) since these only
+  // exist in panelistForms under a temp-* id until Save Changes persists
+  // them and loadEvent() replaces this with the real server data.
+  const [newPanelistIds, setNewPanelistIds] = useState<string[]>([]);
+
+  function addPanelist() {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    setPanelistForms((forms) => ({
+      ...forms,
+      [tempId]: {
+        id: tempId,
+        name: "",
+        titleByline: null,
+        titleAreaOfExpertise: null,
+        bio: null,
+        shortBio: null,
+        headshotUrl: null,
+        clipUrl: null,
+        email: null,
+        affiliateLink: null,
+        swipeCopy: null,
+        transcriptSegment: null,
+        guideBio: null,
+        guideFrameworks: null,
+        guideTakeaways: null,
+        guideQuotes: null,
+        guideActionItems: null,
+        guidePdfUrl: null,
+        toolEntry: null,
+        pastAppearances: [],
+      },
+    }));
+    setNewPanelistIds((ids) => [...ids, tempId]);
+  }
+
+  function removeNewPanelist(tempId: string) {
+    setNewPanelistIds((ids) => ids.filter((id) => id !== tempId));
+    setPanelistForms((forms) => {
+      const { [tempId]: _removed, ...rest } = forms;
+      return rest;
+    });
+  }
 
   async function loadEvent() {
     const res = await fetch(`/api/admin/episodes/${id}`);
@@ -274,11 +317,13 @@ export default function EventDetailPage() {
         })),
       }),
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setMessage({ type: "success", text: "Saved successfully" });
+      setNewPanelistIds([]);
       loadEvent();
     } else {
-      setMessage({ type: "error", text: "Save failed" });
+      setMessage({ type: "error", text: data.error ?? "Save failed" });
     }
     setSaving(false);
   }
@@ -917,9 +962,18 @@ export default function EventDetailPage() {
           </CollapsibleSection>
 
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Panelists ({event.panelists.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Panelists ({event.panelists.length + newPanelistIds.length})
+              </h2>
+              <button
+                type="button"
+                onClick={addPanelist}
+                className="text-xs font-medium text-brand-purple hover:underline"
+              >
+                + Add panelist
+              </button>
+            </div>
             <div className="space-y-4">
               {event.panelists.map((p) => {
                 const pf = panelistForms[p.id] ?? p;
@@ -1307,6 +1361,148 @@ export default function EventDetailPage() {
                           className="input"
                         />
                       </Field>
+                    </div>
+                  </CollapsibleSection>
+                );
+              })}
+
+              {newPanelistIds.map((tempId) => {
+                const pf = panelistForms[tempId];
+                if (!pf) return null;
+                return (
+                  <CollapsibleSection
+                    key={tempId}
+                    title={pf.name || "New panelist (unsaved)"}
+                    defaultOpen={true}
+                  >
+                    <p className="text-xs text-gray-400 -mt-1 mb-3">
+                      Not saved yet — fill this in and click Save Changes below.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="Name">
+                        <input
+                          type="text"
+                          value={pf.name}
+                          onChange={(e) => updatePanelist(tempId, { name: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="Email">
+                        <input
+                          type="email"
+                          value={pf.email ?? ""}
+                          onChange={(e) => updatePanelist(tempId, { email: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="Byline">
+                        <input
+                          type="text"
+                          value={pf.titleByline ?? ""}
+                          onChange={(e) => updatePanelist(tempId, { titleByline: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="Area of expertise">
+                        <input
+                          type="text"
+                          value={pf.titleAreaOfExpertise ?? ""}
+                          onChange={(e) =>
+                            updatePanelist(tempId, { titleAreaOfExpertise: e.target.value })
+                          }
+                          className="input"
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Headshot">
+                      {pf.headshotUrl ? (
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={pf.headshotUrl}
+                            alt={pf.name || "Headshot"}
+                            className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                          />
+                          <label className="inline-block text-xs text-brand-purple hover:underline cursor-pointer">
+                            {uploadingHeadshotFor === tempId ? "Uploading..." : "Replace headshot"}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={(e) => handleHeadshotUpload(tempId, e)}
+                              className="hidden"
+                              disabled={uploadingHeadshotFor === tempId}
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-purple transition-colors">
+                          <div className="text-center">
+                            <p className="text-xs font-medium text-gray-600">
+                              {uploadingHeadshotFor === tempId ? "Uploading..." : "Click to upload headshot"}
+                            </p>
+                            <p className="text-xs text-gray-400">JPG, PNG, WebP</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={(e) => handleHeadshotUpload(tempId, e)}
+                            className="hidden"
+                            disabled={uploadingHeadshotFor === tempId}
+                          />
+                        </label>
+                      )}
+                    </Field>
+                    <Field label="Bio">
+                      <textarea
+                        value={pf.bio ?? ""}
+                        onChange={(e) => updatePanelist(tempId, { bio: e.target.value })}
+                        rows={3}
+                        className="input"
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                      <Field label="Free gift title">
+                        <input
+                          type="text"
+                          value={pf.toolEntry?.freeGiftTitle ?? ""}
+                          onChange={(e) => updateToolEntry(tempId, { freeGiftTitle: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="Free gift URL">
+                        <input
+                          type="text"
+                          value={pf.toolEntry?.freeGiftUrl ?? ""}
+                          onChange={(e) => updateToolEntry(tempId, { freeGiftUrl: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="VIP gift title">
+                        <input
+                          type="text"
+                          value={pf.toolEntry?.vipGiftTitle ?? ""}
+                          onChange={(e) => updateToolEntry(tempId, { vipGiftTitle: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                      <Field label="VIP gift URL">
+                        <input
+                          type="text"
+                          value={pf.toolEntry?.vipGiftUrl ?? ""}
+                          onChange={(e) => updateToolEntry(tempId, { vipGiftUrl: e.target.value })}
+                          className="input"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => removeNewPanelist(tempId)}
+                        className="text-xs font-medium text-red-600 hover:underline"
+                      >
+                        Remove this panelist
+                      </button>
                     </div>
                   </CollapsibleSection>
                 );

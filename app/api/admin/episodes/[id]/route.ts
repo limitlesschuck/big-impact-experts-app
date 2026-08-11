@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MAX_PANELISTS_PER_EVENT } from "@/lib/panelistLimits";
 
 export async function GET(
   _req: NextRequest,
@@ -179,37 +180,67 @@ export async function PATCH(
     eventData.giftPublicUntil = new Date(eventData.giftPublicUntil as string);
   }
 
-  await prisma.$transaction(async (tx) => {
-    if (Object.keys(eventData).length > 0) {
-      await tx.event.update({ where: { id: params.id }, data: eventData });
-    }
-
-    for (const p of panelists ?? []) {
-      const { id: panelistId, toolEntry, ...panelistBody } = p;
-
-      const panelistData: Record<string, unknown> = {};
-      for (const key of PANELIST_ALLOWED) {
-        if (key in panelistBody) panelistData[key] = panelistBody[key];
-      }
-      if (Object.keys(panelistData).length > 0) {
-        await tx.panelist.update({ where: { id: panelistId }, data: panelistData });
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (Object.keys(eventData).length > 0) {
+        await tx.event.update({ where: { id: params.id }, data: eventData });
       }
 
-      if (toolEntry) {
-        const toolEntryData: Record<string, unknown> = {};
-        for (const key of TOOL_ENTRY_ALLOWED) {
-          if (key in toolEntry) toolEntryData[key] = toolEntry[key];
+      // Panelist rows added via the edit page's "+ Add panelist" arrive
+      // with a client-generated temp-* id rather than a real one, since
+      // they don't exist in the DB yet -- everything else about them
+      // (bio, gift fields, etc.) goes through the same allowlist/save
+      // flow as an existing panelist edit.
+      const newPanelistCount = (panelists ?? []).filter((p) => p.id.startsWith("temp-")).length;
+      if (newPanelistCount > 0) {
+        const existingCount = await tx.panelist.count({ where: { eventId: params.id } });
+        if (existingCount + newPanelistCount > MAX_PANELISTS_PER_EVENT) {
+          throw new Error(
+            `Adding ${newPanelistCount} panelist(s) would exceed the ${MAX_PANELISTS_PER_EVENT}-panelist limit (this event already has ${existingCount})`
+          );
         }
-        if (Object.keys(toolEntryData).length > 0) {
-          await tx.toolEntry.upsert({
-            where: { panelistId },
-            update: toolEntryData,
-            create: { panelistId, ...toolEntryData },
+      }
+
+      for (const p of panelists ?? []) {
+        const { id: panelistId, toolEntry, ...panelistBody } = p;
+
+        const panelistData: Record<string, unknown> = {};
+        for (const key of PANELIST_ALLOWED) {
+          if (key in panelistBody) panelistData[key] = panelistBody[key];
+        }
+
+        let realPanelistId = panelistId;
+
+        if (panelistId.startsWith("temp-")) {
+          const name = typeof panelistData.name === "string" ? panelistData.name.trim() : "";
+          if (!name) continue; // an unsaved "+ Add panelist" row that was never filled in
+          const created = await tx.panelist.create({
+            data: { ...panelistData, name, eventId: params.id } as never,
           });
+          realPanelistId = created.id;
+        } else if (Object.keys(panelistData).length > 0) {
+          await tx.panelist.update({ where: { id: panelistId }, data: panelistData });
+        }
+
+        if (toolEntry) {
+          const toolEntryData: Record<string, unknown> = {};
+          for (const key of TOOL_ENTRY_ALLOWED) {
+            if (key in toolEntry) toolEntryData[key] = toolEntry[key];
+          }
+          if (Object.keys(toolEntryData).length > 0) {
+            await tx.toolEntry.upsert({
+              where: { panelistId: realPanelistId },
+              update: toolEntryData,
+              create: { panelistId: realPanelistId, ...toolEntryData },
+            });
+          }
         }
       }
-    }
-  });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Save failed";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 
   const event = await prisma.event.findUnique({
     where: { id: params.id },

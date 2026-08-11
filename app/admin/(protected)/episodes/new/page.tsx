@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MAX_PANELISTS_PER_EVENT as MAX_PANELISTS } from "@/lib/panelistLimits";
 
 interface PanelistForm {
   name: string;
@@ -33,8 +34,6 @@ const emptyPanelist = (): PanelistForm => ({
   vipGiftDescription: "",
   vipGiftUrl: "",
 });
-
-const MAX_PANELISTS = 25;
 
 export default function NewEventPage() {
   const router = useRouter();
