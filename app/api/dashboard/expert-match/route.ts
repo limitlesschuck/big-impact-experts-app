@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   // otherwise still hit this endpoint until their next navigation.
   const member = await prisma.member.findUnique({
     where: { id: session.user.id },
-    select: { status: true },
+    select: { status: true, firstName: true, lastName: true, email: true },
   });
   if (!member || member.status === "disabled") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,9 +33,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Question is too long" }, { status: 400 });
   }
 
+  // Included on every response (not just no-match ones) so the widget
+  // can pre-fill the "send to Chuck" fallback without a second round
+  // trip -- this route already has the Member row loaded for the
+  // status check above.
+  const memberContact = {
+    name: [member.firstName, member.lastName].filter(Boolean).join(" "),
+    email: member.email,
+  };
+
   try {
     const result = await matchExpertsToQuestion(question);
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, memberContact });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Expert match error:", error);

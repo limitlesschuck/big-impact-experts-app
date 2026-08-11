@@ -9,19 +9,115 @@ interface Recommendation {
   href: string;
 }
 
+interface MemberContact {
+  name: string;
+  email: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   text: string;
   recommendations?: Recommendation[];
+  matched?: boolean;
+  originalQuestion?: string;
 }
 
 const CLIENT_TIMEOUT_MS = 60_000;
+
+function LeadForm({
+  initialName,
+  initialEmail,
+  initialQuestion,
+}: {
+  initialName: string;
+  initialEmail: string;
+  initialQuestion: string;
+}) {
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+  const [question, setQuestion] = useState(initialQuestion);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("sending");
+    setError("");
+
+    try {
+      const res = await fetch("/api/dashboard/expert-match/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, question }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("sent");
+      } else {
+        setStatus("error");
+        setError(data.error ?? "Something went wrong — please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setError("Something went wrong — please try again.");
+    }
+  }
+
+  if (status === "sent") {
+    return (
+      <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 text-left">
+        <p className="text-sm text-green-800">Sent — Chuck will follow up directly.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSend}
+      className="mt-2 bg-white border border-gray-200 rounded-lg p-3 text-left space-y-2"
+    >
+      <p className="text-xs text-gray-500">Want Chuck to follow up personally instead?</p>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name"
+        required
+        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+      />
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Your email"
+        required
+        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+      />
+      <textarea
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        rows={2}
+        required
+        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-transparent"
+      />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <button
+        type="submit"
+        disabled={status === "sending"}
+        className="w-full px-3 py-1.5 text-xs font-medium text-white bg-brand-orange rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
+      >
+        {status === "sending" ? "Sending..." : "Send to Chuck"}
+      </button>
+    </form>
+  );
+}
 
 export default function ExpertMatchWidget() {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [memberContact, setMemberContact] = useState<MemberContact>({ name: "", email: "" });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,9 +138,16 @@ export default function ExpertMatchWidget() {
       const data = await res.json();
 
       if (res.ok) {
+        if (data.memberContact) setMemberContact(data.memberContact);
         setMessages((m) => [
           ...m,
-          { role: "assistant", text: data.message, recommendations: data.recommendations },
+          {
+            role: "assistant",
+            text: data.message,
+            recommendations: data.recommendations,
+            matched: data.matched,
+            originalQuestion: q,
+          },
         ]);
       } else {
         setMessages((m) => [
@@ -112,6 +215,13 @@ export default function ExpertMatchWidget() {
                       </Link>
                     ))}
                   </div>
+                )}
+                {m.role === "assistant" && m.matched === false && (
+                  <LeadForm
+                    initialName={memberContact.name}
+                    initialEmail={memberContact.email}
+                    initialQuestion={m.originalQuestion ?? ""}
+                  />
                 )}
               </div>
             ))}

@@ -48,3 +48,40 @@ export async function sendPasswordResetEmail(email: string, setPasswordUrl: stri
     throw new Error(`Resend error sending password reset email: ${error.message}`);
   }
 }
+
+// Only needed here -- the other email functions above interpolate
+// self-generated token URLs, not free-form user input. The question
+// (and, in principle, the editable name field) comes straight from a
+// chat box, so it needs escaping before landing in a raw HTML body.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export async function sendExpertMatchLeadEmail(params: {
+  name: string;
+  email: string;
+  question: string;
+}): Promise<void> {
+  const resend = getResendClient();
+
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: "community@eventaffiliates.com",
+    replyTo: params.email,
+    subject: `Expert Match: unanswered question from ${params.name}`,
+    html: `
+      <p><strong>${escapeHtml(params.name)}</strong> (${escapeHtml(params.email)}) asked the Expert Match widget a question that didn't match any expert's guide content:</p>
+      <p>"${escapeHtml(params.question)}"</p>
+      <p>They'd like a direct follow-up.</p>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`Resend error sending expert-match lead email: ${error.message}`);
+  }
+}
