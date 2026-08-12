@@ -15,8 +15,16 @@ export async function POST(
     );
   }
 
+  // Gated the same as every other visitor-facing event query -- only
+  // published events are registerable, regardless of eventDate. Without
+  // this, a POST straight to this route with a draft/approved event's
+  // id could register for it even though the register page itself would
+  // never surface that event.
   const event = await prisma.event.findFirst({
-    where: { OR: [{ id: params.eventId }, { slug: params.eventId }] },
+    where: {
+      publishStatus: "published",
+      OR: [{ id: params.eventId }, { slug: params.eventId }],
+    },
     select: { id: true },
   });
 

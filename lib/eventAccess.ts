@@ -51,12 +51,10 @@ export type PublicEvent = NonNullable<Awaited<ReturnType<typeof getPublicEvent>>
 // Separate from getPublicEvent -- deliberately not shared, since the
 // shape genuinely differs: this needs panelist titles/bio/hostNote for
 // the registration page and has no reason to touch ToolEntry/gift
-// data at all. Not gated on publishStatus: that field describes the
-// post-event AI-content pipeline (draft -> ai_generated -> approved
-// -> published), an unrelated concern to "is this event open for
-// registration" -- an upcoming event being set up wouldn't have been
-// through that pipeline yet. Visibility is controlled by the admin
-// choosing who gets the link.
+// data at all. Gated on publishStatus === "published" -- only published
+// events are visible to visitors/members, regardless of eventDate; an
+// admin still working on an event (draft/ai_generated/approved) keeps
+// it invisible here even if it's scheduled in the future.
 const REGISTRATION_EVENT_SELECT = {
   id: true,
   slug: true,
@@ -89,6 +87,7 @@ const REGISTRATION_EVENT_SELECT = {
 export async function getPublicEventForRegistration(idOrSlug: string) {
   return prisma.event.findFirst({
     where: {
+      publishStatus: "published",
       OR: [{ id: idOrSlug }, { slug: idOrSlug }],
     },
     select: REGISTRATION_EVENT_SELECT,
@@ -96,11 +95,10 @@ export async function getPublicEventForRegistration(idOrSlug: string) {
 }
 
 // The permanent /register URL always resolves to whichever event is
-// soonest in the future -- not gated by publishStatus, same reasoning
-// as above.
+// soonest in the future -- gated the same way as above.
 export async function getSoonestUpcomingEvent() {
   return prisma.event.findFirst({
-    where: { eventDate: { gte: new Date() } },
+    where: { eventDate: { gte: new Date() }, publishStatus: "published" },
     orderBy: { eventDate: "asc" },
     select: REGISTRATION_EVENT_SELECT,
   });
@@ -111,15 +109,14 @@ export type PublicEventForRegistration = NonNullable<
 >;
 
 // ── Member Dashboard ─────────────────────────────────────────────────
-// Access is gated purely by Member.status (checked live in
-// app/dashboard/layout.tsx, since a JWT can't carry mutable state) plus
-// eventDate being in the past -- not publishStatus, which tracks the
-// admin's internal AI-content pipeline and is orthogonal to whether a
-// member should be able to see an event they attended, same reasoning
-// as REGISTRATION_EVENT_SELECT above. The past-events gate is re-applied
-// at every level (list, detail, per-expert), not just the list -- a
-// filtered-out list item is not access control if the detail route
-// underneath it doesn't enforce the same rule.
+// Access is gated by Member.status (checked live in
+// app/dashboard/layout.tsx, since a JWT can't carry mutable state), plus
+// eventDate being in the past, plus publishStatus === "published" --
+// draft/ai_generated/approved events stay admin-only regardless of how
+// far in the past their eventDate is. Both gates are re-applied at every
+// level (list, detail, per-expert), not just the list -- a filtered-out
+// list item is not access control if the detail route underneath it
+// doesn't enforce the same rule.
 
 export async function getEpisodeCardImagePreference(): Promise<"youtube_thumbnail" | "cover_art"> {
   const record = await prisma.siteConfig.findFirst();
@@ -141,7 +138,7 @@ export function pickEpisodeThumbnail(
 // this one query/component, just called with a different value.
 export async function getMemberDashboardEvents(eventType: "panel" | "training") {
   return prisma.event.findMany({
-    where: { eventDate: { lt: new Date() }, eventType },
+    where: { eventDate: { lt: new Date() }, eventType, publishStatus: "published" },
     orderBy: { eventDate: "desc" },
     select: {
       id: true,
@@ -161,7 +158,7 @@ export type MemberDashboardEventListItem = Awaited<
 
 export async function getMemberDashboardEvent(eventId: string) {
   return prisma.event.findFirst({
-    where: { id: eventId, eventDate: { lt: new Date() } },
+    where: { id: eventId, eventDate: { lt: new Date() }, publishStatus: "published" },
     select: {
       id: true,
       titleOriginal: true,
@@ -189,7 +186,7 @@ export async function getMemberDashboardPanelist(eventId: string, panelistId: st
     where: {
       id: panelistId,
       eventId,
-      event: { eventDate: { lt: new Date() } },
+      event: { eventDate: { lt: new Date() }, publishStatus: "published" },
     },
     select: {
       id: true,
@@ -224,7 +221,7 @@ export type MemberDashboardPanelist = NonNullable<
 // event's per-expert page).
 export async function getDirectoryPanelists() {
   return prisma.panelist.findMany({
-    where: { event: { eventDate: { lt: new Date() } } },
+    where: { event: { eventDate: { lt: new Date() }, publishStatus: "published" } },
     orderBy: { name: "asc" },
     select: {
       id: true,
@@ -251,7 +248,7 @@ export type DirectoryPanelist = Awaited<ReturnType<typeof getDirectoryPanelists>
 // a teaser is also findable in the full directory it links to.
 export async function getFeaturedPanelists(limit: number) {
   return prisma.panelist.findMany({
-    where: { event: { eventDate: { lt: new Date() } } },
+    where: { event: { eventDate: { lt: new Date() }, publishStatus: "published" } },
     orderBy: { event: { eventDate: "desc" } },
     take: limit,
     select: {
@@ -277,7 +274,7 @@ export type FeaturedPanelist = Awaited<ReturnType<typeof getFeaturedPanelists>>[
 export async function getExpertMatchPool() {
   return prisma.panelist.findMany({
     where: {
-      event: { eventDate: { lt: new Date() } },
+      event: { eventDate: { lt: new Date() }, publishStatus: "published" },
       guideBio: { not: null },
     },
     select: {
@@ -305,7 +302,7 @@ export type ExpertMatchPoolPanelist = Awaited<ReturnType<typeof getExpertMatchPo
 export async function getGuideDirectory() {
   return prisma.panelist.findMany({
     where: {
-      event: { eventDate: { lt: new Date() } },
+      event: { eventDate: { lt: new Date() }, publishStatus: "published" },
       guidePdfUrl: { not: null },
     },
     orderBy: { event: { eventDate: "desc" } },
@@ -328,7 +325,7 @@ export type GuideDirectoryEntry = Awaited<ReturnType<typeof getGuideDirectory>>[
 export async function getGiftDirectory() {
   return prisma.panelist.findMany({
     where: {
-      event: { eventDate: { lt: new Date() } },
+      event: { eventDate: { lt: new Date() }, publishStatus: "published" },
       toolEntry: {
         is: {
           OR: [
