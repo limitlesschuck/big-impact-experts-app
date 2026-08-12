@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useExpertMatch } from "@/components/member/ExpertMatchContext";
 
 interface Recommendation {
   name: string;
@@ -113,7 +114,7 @@ function LeadForm({
 }
 
 export default function ExpertMatchWidget() {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useExpertMatch();
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);

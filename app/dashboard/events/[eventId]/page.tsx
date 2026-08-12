@@ -18,11 +18,14 @@ export default async function EventDetailPage({
   if (!event) notFound();
 
   const vimeo = event.recordingUrl ? parseVimeoUrl(event.recordingUrl) : null;
+  const backHref = event.eventType === "training" ? "/dashboard/training" : "/dashboard/replays";
+  const backLabel =
+    event.eventType === "training" ? "← Back to Workshops & Training" : "← Back to Past Event Replays";
 
   return (
     <div className="max-w-5xl">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900">
-        ← Back to Your Events
+      <Link href={backHref} className="text-sm text-gray-500 hover:text-gray-900">
+        {backLabel}
       </Link>
 
       <h1 className="text-2xl font-semibold text-gray-900 mt-3 mb-6">

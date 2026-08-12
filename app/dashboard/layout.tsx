@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import MemberSidebar from "@/components/member/MemberSidebar";
+import DashboardTopBar from "@/components/member/DashboardTopBar";
 import ExpertMatchWidget from "@/components/member/ExpertMatchWidget";
+import { ExpertMatchProvider } from "@/components/member/ExpertMatchContext";
 
 export default async function DashboardLayout({
   children,
@@ -30,10 +31,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg flex">
-      <MemberSidebar user={session.user} />
-      <main className="flex-1 min-w-0 p-8">{children}</main>
-      <ExpertMatchWidget />
-    </div>
+    <ExpertMatchProvider>
+      <div className="min-h-screen bg-brand-bg">
+        <DashboardTopBar user={session.user} />
+        <main className="max-w-5xl mx-auto p-8">{children}</main>
+        <ExpertMatchWidget />
+      </div>
+    </ExpertMatchProvider>
   );
 }

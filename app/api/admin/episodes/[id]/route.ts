@@ -114,6 +114,7 @@ const EVENT_ALLOWED = [
   "registrationHeading",
   "registrationSubheading",
   "surveyUrl",
+  "eventType",
   "transcriptRaw",
   "transcriptCleaned",
 ];

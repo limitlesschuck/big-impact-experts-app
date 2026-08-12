@@ -136,9 +136,12 @@ export function pickEpisodeThumbnail(
   return preferred || fallback || event.thumbnailUrl || null;
 }
 
-export async function getMemberDashboardEvents() {
+// eventType splits this same past-events pool between the Past Event
+// Replays and Workshops & Training dashboard pages -- both pages share
+// this one query/component, just called with a different value.
+export async function getMemberDashboardEvents(eventType: "panel" | "training") {
   return prisma.event.findMany({
-    where: { eventDate: { lt: new Date() } },
+    where: { eventDate: { lt: new Date() }, eventType },
     orderBy: { eventDate: "desc" },
     select: {
       id: true,
@@ -164,6 +167,7 @@ export async function getMemberDashboardEvent(eventId: string) {
       titleOriginal: true,
       titleYoutube: true,
       eventDate: true,
+      eventType: true,
       recordingUrl: true,
       panelists: {
         select: {
@@ -292,3 +296,67 @@ export async function getExpertMatchPool() {
 }
 
 export type ExpertMatchPoolPanelist = Awaited<ReturnType<typeof getExpertMatchPool>>[number];
+
+// Dashboard "Guides & Checklists" -- a flat list of every panelist's guide
+// across every past event (spans both panels and trainings; guide value
+// doesn't depend on event format). One indexed query filtered at the DB
+// level on guidePdfUrl not null, not a fetch-everything-then-filter-in-JS
+// pass -- same shape as getDirectoryPanelists/getExpertMatchPool above.
+export async function getGuideDirectory() {
+  return prisma.panelist.findMany({
+    where: {
+      event: { eventDate: { lt: new Date() } },
+      guidePdfUrl: { not: null },
+    },
+    orderBy: { event: { eventDate: "desc" } },
+    select: {
+      id: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      guidePdfUrl: true,
+      event: { select: { id: true, titleOriginal: true, titleYoutube: true } },
+    },
+  });
+}
+
+export type GuideDirectoryEntry = Awaited<ReturnType<typeof getGuideDirectory>>[number];
+
+// Dashboard "Tools & Resources" -- same shape, for panelists with a Free
+// and/or VIP gift. A panelist can have both, so the page flattens this
+// into one row per gift after the single query returns.
+export async function getGiftDirectory() {
+  return prisma.panelist.findMany({
+    where: {
+      event: { eventDate: { lt: new Date() } },
+      toolEntry: {
+        is: {
+          OR: [
+            { freeGiftUrl: { not: null } },
+            { freeGiftTitle: { not: null } },
+            { vipGiftUrl: { not: null } },
+            { vipGiftTitle: { not: null } },
+          ],
+        },
+      },
+    },
+    orderBy: { event: { eventDate: "desc" } },
+    select: {
+      id: true,
+      name: true,
+      event: { select: { id: true, titleOriginal: true, titleYoutube: true } },
+      toolEntry: {
+        select: {
+          freeGiftTitle: true,
+          freeGiftDescription: true,
+          freeGiftUrl: true,
+          vipGiftTitle: true,
+          vipGiftDescription: true,
+          vipGiftUrl: true,
+        },
+      },
+    },
+  });
+}
+
+export type GiftDirectoryEntry = Awaited<ReturnType<typeof getGiftDirectory>>[number];

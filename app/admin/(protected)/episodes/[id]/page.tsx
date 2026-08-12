@@ -48,6 +48,7 @@ interface Event {
   descriptionWebsite: string | null;
   tags: string[];
   publishStatus: string;
+  eventType: string;
   audioUrl: string | null;
   thumbnailUrl: string | null;
   youtubeId: string | null;
@@ -75,6 +76,7 @@ interface Event {
 }
 
 const STATUSES = ["draft", "ai_generated", "approved", "published"];
+const EVENT_TYPES = ["panel", "training"];
 
 // Guide generation is a single blocking Claude API call with no
 // real progress signal from the server -- this is a simulated
@@ -152,6 +154,7 @@ export default function EventDetailPage() {
     descriptionWebsite: "",
     tags: "",
     publishStatus: "draft",
+    eventType: "panel",
     youtubeId: "",
     mp4Url: "",
     coverArtUrl: "",
@@ -229,6 +232,7 @@ export default function EventDetailPage() {
       descriptionWebsite: data.descriptionWebsite ?? "",
       tags: (data.tags ?? []).join(", "),
       publishStatus: data.publishStatus ?? "draft",
+      eventType: data.eventType ?? "panel",
       youtubeId: data.youtubeId ?? "",
       mp4Url: data.mp4Url ?? "",
       coverArtUrl: data.coverArtUrl ?? "",
@@ -1586,6 +1590,20 @@ export default function EventDetailPage() {
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {s.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Event type">
+              <select
+                value={form.eventType}
+                onChange={(e) => setForm((f) => ({ ...f, eventType: e.target.value }))}
+                className="input"
+              >
+                {EVENT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t === "panel" ? "Panel (Past Event Replays)" : "Training (Workshops & Training)"}
                   </option>
                 ))}
               </select>
