@@ -5,8 +5,18 @@ import {
   DEFAULT_REGISTER_PAGE_CONFIG,
   deepMerge,
   type RegisterPageConfig,
-  type ResponsiveSize,
 } from "@/lib/registerPageConfig";
+import { DEFAULT_SALES_PAGE_CONFIG, type SalesPageConfig } from "@/lib/salesPageConfig";
+import { DEFAULT_HOME_PAGE_CONFIG, type HomePageConfig } from "@/lib/homePageConfig";
+import {
+  Section,
+  ColorField,
+  TextField,
+  SizeField,
+  ResponsiveSizeField,
+} from "@/components/admin/SettingsFields";
+import SalesPageSettings from "@/components/admin/SalesPageSettings";
+import HomePageSettings from "@/components/admin/HomePageSettings";
 
 type DataTool = "slugs" | null;
 
@@ -18,170 +28,15 @@ const TOOL_WARNINGS: Record<Exclude<DataTool, null>, { title: string; body: stri
   },
 };
 
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 mt-6 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
-      >
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
-        </div>
-        <span className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
-      </button>
-      {open && <div className="px-6 pb-6 border-t border-gray-100 pt-4 space-y-4">{children}</div>}
-    </div>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <label className="text-sm text-gray-700">{label}</label>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : "#000000"}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-9 h-9 rounded border border-gray-200 cursor-pointer"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-28 px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
-        />
-      </div>
-    </div>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  multiline?: boolean;
-}) {
-  return (
-    <div>
-      <label className="block text-sm text-gray-700 mb-1">{label}</label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={3}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
-        />
-      ) : (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
-        />
-      )}
-    </div>
-  );
-}
-
-function SizeField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <label className="text-sm text-gray-700">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="1rem"
-        className="w-24 px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
-      />
-    </div>
-  );
-}
-
-function ResponsiveSizeField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: ResponsiveSize;
-  onChange: (v: ResponsiveSize) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-sm text-gray-700 mb-1.5">{label}</label>
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <span className="block text-[10px] text-gray-400 mb-0.5">Mobile</span>
-          <input
-            type="text"
-            value={value.base}
-            onChange={(e) => onChange({ ...value, base: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
-          />
-        </div>
-        <div>
-          <span className="block text-[10px] text-gray-400 mb-0.5">Tablet</span>
-          <input
-            type="text"
-            value={value.sm}
-            onChange={(e) => onChange({ ...value, sm: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
-          />
-        </div>
-        <div>
-          <span className="block text-[10px] text-gray-400 mb-0.5">Desktop</span>
-          <input
-            type="text"
-            value={value.lg}
-            onChange={(e) => onChange({ ...value, lg: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const [episodeCardImage, setEpisodeCardImage] = useState<"youtube_thumbnail" | "cover_art">("youtube_thumbnail");
   const [episodeGuideEnabled, setEpisodeGuideEnabled] = useState(false);
   const [shortBioMaxLength, setShortBioMaxLength] = useState(300);
   const [registerPage, setRegisterPage] = useState<RegisterPageConfig>(DEFAULT_REGISTER_PAGE_CONFIG);
+  const [salesPage, setSalesPage] = useState<SalesPageConfig>(DEFAULT_SALES_PAGE_CONFIG);
+  const [homePage, setHomePage] = useState<HomePageConfig>(DEFAULT_HOME_PAGE_CONFIG);
+  const [membershipCheckoutUrl, setMembershipCheckoutUrl] = useState("https://go.bigimpactexperts.com/join");
+  const [membershipPriceLabel, setMembershipPriceLabel] = useState("$39/mo");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -226,6 +81,10 @@ export default function SettingsPage() {
         if (data.episodeGuideEnabled !== undefined) setEpisodeGuideEnabled(data.episodeGuideEnabled);
         if (typeof data.shortBioMaxLength === "number") setShortBioMaxLength(data.shortBioMaxLength);
         if (data.registerPage) setRegisterPage(deepMerge(DEFAULT_REGISTER_PAGE_CONFIG, data.registerPage));
+        if (data.salesPage) setSalesPage(deepMerge(DEFAULT_SALES_PAGE_CONFIG, data.salesPage));
+        if (data.homePage) setHomePage(deepMerge(DEFAULT_HOME_PAGE_CONFIG, data.homePage));
+        if (typeof data.membershipCheckoutUrl === "string") setMembershipCheckoutUrl(data.membershipCheckoutUrl);
+        if (typeof data.membershipPriceLabel === "string") setMembershipPriceLabel(data.membershipPriceLabel);
       });
   }, []);
 
@@ -235,7 +94,16 @@ export default function SettingsPage() {
     const res = await fetch("/api/admin/site-config", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ episodeCardImage, episodeGuideEnabled, shortBioMaxLength, registerPage }),
+      body: JSON.stringify({
+        episodeCardImage,
+        episodeGuideEnabled,
+        shortBioMaxLength,
+        registerPage,
+        salesPage,
+        homePage,
+        membershipCheckoutUrl,
+        membershipPriceLabel,
+      }),
     });
     if (res.ok) {
       setMessage({ type: "success", text: "Settings saved" });
@@ -660,6 +528,62 @@ export default function SettingsPage() {
           />
         </div>
 
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      </Section>
+
+      <Section
+        title="Membership"
+        subtitle="Referenced from the Home and Sales pages via a single field, so the price only needs to be updated in one place."
+      >
+        <TextField
+          label="Checkout URL"
+          value={membershipCheckoutUrl}
+          onChange={setMembershipCheckoutUrl}
+          hint="Where every 'Join'/'Become a Member' button on the public site links to."
+        />
+        <TextField
+          label="Price label"
+          value={membershipPriceLabel}
+          onChange={setMembershipPriceLabel}
+          hint={'Shown wherever Sales/Home page copy includes a "{price}" token.'}
+        />
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      </Section>
+
+      <Section
+        title="Sales Page (/membership)"
+        subtitle="All copy on the public membership sales page."
+      >
+        <SalesPageSettings config={salesPage} onChange={setSalesPage} />
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      </Section>
+
+      <Section title="Home Page (/)" subtitle="All copy on the public home page.">
+        <HomePageSettings config={homePage} onChange={setHomePage} />
         <div className="flex justify-end pt-2">
           <button
             onClick={handleSave}

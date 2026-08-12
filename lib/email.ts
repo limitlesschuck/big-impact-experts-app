@@ -85,3 +85,26 @@ export async function sendExpertMatchLeadEmail(params: {
     throw new Error(`Resend error sending expert-match lead email: ${error.message}`);
   }
 }
+
+export async function sendContactEmail(params: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<void> {
+  const resend = getResendClient();
+
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to: "community@eventaffiliates.com",
+    replyTo: params.email,
+    subject: `Contact form: message from ${params.name}`,
+    html: `
+      <p><strong>${escapeHtml(params.name)}</strong> (${escapeHtml(params.email)}) sent a message through the Contact page:</p>
+      <p>"${escapeHtml(params.message)}"</p>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`Resend error sending contact email: ${error.message}`);
+  }
+}

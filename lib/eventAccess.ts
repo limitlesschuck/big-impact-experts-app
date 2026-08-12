@@ -237,6 +237,34 @@ export async function getDirectoryPanelists() {
 
 export type DirectoryPanelist = Awaited<ReturnType<typeof getDirectoryPanelists>>[number];
 
+// Public marketing-page teaser grids (Home "Meet Our Experts", Sales page
+// "Learn From The Best Experts"). Selection is a simple recency
+// heuristic -- the panelists from the most recently occurred events --
+// rather than a curated "featured" flag: ToolEntry.featured exists in the
+// schema but has no admin UI to set it and no other consumer, and
+// building that curation UI is a larger feature than either page asked
+// for. Same past-events pool as getDirectoryPanelists, so anyone shown in
+// a teaser is also findable in the full directory it links to.
+export async function getFeaturedPanelists(limit: number) {
+  return prisma.panelist.findMany({
+    where: { event: { eventDate: { lt: new Date() } } },
+    orderBy: { event: { eventDate: "desc" } },
+    take: limit,
+    select: {
+      id: true,
+      eventId: true,
+      name: true,
+      titleByline: true,
+      titleAreaOfExpertise: true,
+      headshotUrl: true,
+      bio: true,
+      shortBio: true,
+    },
+  });
+}
+
+export type FeaturedPanelist = Awaited<ReturnType<typeof getFeaturedPanelists>>[number];
+
 // Candidate pool for the Expert Match widget. Same past-events gate as
 // the rest of the dashboard, plus guideBio not null -- a panelist with
 // no generated guide content has nothing to ground a recommendation in,

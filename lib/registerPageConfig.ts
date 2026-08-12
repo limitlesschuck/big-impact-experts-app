@@ -115,23 +115,10 @@ export const DEFAULT_REGISTER_PAGE_CONFIG: RegisterPageConfig = {
   },
 };
 
-export function deepMerge<T>(defaults: T, overrides: unknown): T {
-  if (typeof overrides !== "object" || overrides === null || Array.isArray(overrides)) {
-    return defaults;
-  }
-  const result: Record<string, unknown> = { ...(defaults as Record<string, unknown>) };
-  for (const key of Object.keys(defaults as Record<string, unknown>)) {
-    const defaultValue = (defaults as Record<string, unknown>)[key];
-    const overrideValue = (overrides as Record<string, unknown>)[key];
-    if (overrideValue === undefined) continue;
-    if (typeof defaultValue === "object" && defaultValue !== null && !Array.isArray(defaultValue)) {
-      result[key] = deepMerge(defaultValue, overrideValue);
-    } else if (typeof overrideValue === typeof defaultValue) {
-      result[key] = overrideValue;
-    }
-  }
-  return result as T;
-}
+// Re-exported for existing callers (getRegisterPageConfig.ts, settings
+// page) -- the implementation now lives in lib/deepMerge.ts since
+// salesPageConfig/homePageConfig need the same helper.
+export { deepMerge } from "@/lib/deepMerge";
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const CSS_SIZE_RE = /^\d+(\.\d+)?(rem|em|px)$/;

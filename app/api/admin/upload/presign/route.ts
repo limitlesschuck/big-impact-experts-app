@@ -8,6 +8,12 @@ import { VIDEO_TYPES, VIDEO_MAX_BYTES } from "@/lib/uploadRules";
 
 const PRESIGNED_URL_TTL_SECONDS = 300;
 
+// Panelist clips and Sales Page testimonial videos share this route but
+// land in separate R2 folders for organization -- allowlisted rather than
+// accepting any string, since this becomes part of the object key.
+const ALLOWED_FOLDERS = ["panelist-clips", "testimonials"] as const;
+type AllowedFolder = (typeof ALLOWED_FOLDERS)[number];
+
 // Issues a short-lived, size-locked presigned PUT URL for a video clip so
 // the browser can upload directly to R2 -- this process's memory never
 // holds the file at all, unlike /api/admin/upload's buffered path.
@@ -43,7 +49,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const key = buildObjectKey("panelist-clips", filename);
+  const requestedFolder = typeof body?.folder === "string" ? body.folder : "panelist-clips";
+  const folder: AllowedFolder = ALLOWED_FOLDERS.includes(requestedFolder as AllowedFolder)
+    ? (requestedFolder as AllowedFolder)
+    : "panelist-clips";
+
+  const key = buildObjectKey(folder, filename);
 
   // Signing with ContentLength included is what actually enforces the size
   // cap here -- the signature is only valid for a PUT whose body is
