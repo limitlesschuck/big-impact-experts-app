@@ -20,17 +20,23 @@ export interface TitledItem {
 
 export interface SalesPageConfig {
   hero: {
+    eyebrow: string;
     headline: string;
     subhead: string;
     ctaLabel: string;
+    supportingLine: string;
   };
   whatIsSection: {
     heading: string;
+    // Rendered paragraph-by-paragraph (split on blank lines) -- the first
+    // paragraph gets the larger "pull quote" display treatment from the
+    // design reference, the rest render as normal body copy.
     body: string;
   };
   enhanceSection: {
     heading: string;
-    bullets: string[];
+    subhead: string;
+    bullets: TitledItem[];
   };
   howItWorks: {
     heading: string;
@@ -43,6 +49,7 @@ export interface SalesPageConfig {
   topicsSection: {
     heading: string;
     body: string;
+    topics: string[];
   };
   whatYouGet: {
     heading: string;
@@ -55,6 +62,11 @@ export interface SalesPageConfig {
   aiExpertMatch: {
     heading: string;
     body: string;
+    // Decorative only -- these link to Become a Member, they don't drive
+    // any real matching. The real Expert Match feature is member-only
+    // (it needs an authenticated session), so there's no way to make a
+    // public-page demo of it genuinely live without new API surface.
+    challenges: string[];
   };
   testimonials: TestimonialSlot[];
   gettingStarted: {
@@ -68,6 +80,7 @@ export interface SalesPageConfig {
   finalCta: {
     heading: string;
     label: string;
+    subtext: string;
   };
   faqItems: FaqItem[];
 }
@@ -77,23 +90,41 @@ const COMING_SOON_CLIP =
 
 export const DEFAULT_SALES_PAGE_CONFIG: SalesPageConfig = {
   hero: {
+    eyebrow: "Free Monthly Expert Panels",
     headline: "Learn Directly From The Experts Who've Already Built What You're Building",
     subhead:
       "Get instant access to live monthly expert panels, guides, replays, and AI-powered expert matching — for less than the price of one coaching call.",
     ctaLabel: "Start Your Membership",
+    supportingLine: "Cancel anytime · Instant access",
   },
   whatIsSection: {
     heading: "What Is Big Impact Experts?",
-    body: "You didn't start your business to do it alone. But somewhere between \"just getting started\" and \"actually making sales,\" most coaches and consultants end up exactly there — posting content nobody sees, chasing leads that don't convert, and wondering why the thing that worked for someone else isn't working for you. Big Impact Experts exists to close that gap. Every month, we bring together proven experts — people who've already built the visibility, the partnerships, and the consistent income you're working toward — and give you direct access to how they actually did it. No theory. No recycled advice. Just the real frameworks, from people who've used them.",
+    body: "You didn't start your business to do it alone. But somewhere between \"just getting started\" and \"actually making sales,\" most coaches and consultants end up exactly there — posting content nobody sees, chasing leads that don't convert, and wondering why the thing that worked for someone else isn't working for you.\n\nBig Impact Experts exists to close that gap. Every month, we bring together proven experts — people who've already built the visibility, the partnerships, and the consistent income you're working toward — and give you direct access to how they actually did it. No theory. No recycled advice. Just the real frameworks, from people who've used them.",
   },
   enhanceSection: {
     heading: "Enhance Every Area of Your Business",
+    subhead: "Whatever's holding your business back, there's an expert who's already solved it.",
     bullets: [
-      "Get seen — visibility strategies from experts who've built real audiences, not just followers",
-      "Get paid to speak — position yourself and your message so event planners come to you",
-      "Fix what's blocking you — the mindset and procrastination patterns quietly stalling your growth",
-      "Build real partnerships — the affiliate and referral relationships that create consistent, compounding growth",
-      "Turn your story into your business — the frameworks for owning your message with confidence",
+      {
+        title: "Get Seen",
+        description: "Visibility strategies from experts who've built real audiences, not just followers",
+      },
+      {
+        title: "Get Paid To Speak",
+        description: "Position yourself and your message so event planners come to you",
+      },
+      {
+        title: "Fix What's Blocking You",
+        description: "The mindset and procrastination patterns quietly stalling your growth",
+      },
+      {
+        title: "Build Real Partnerships",
+        description: "The affiliate and referral relationships that create consistent, compounding growth",
+      },
+      {
+        title: "Turn Your Story Into Your Business",
+        description: "The frameworks for owning your message with confidence",
+      },
     ],
   },
   howItWorks: {
@@ -126,6 +157,28 @@ export const DEFAULT_SALES_PAGE_CONFIG: SalesPageConfig = {
   topicsSection: {
     heading: "Explore Topics Like",
     body: "Covering 50+ areas of expertise — from visibility and sales to mindset, partnerships, and business growth.",
+    topics: [
+      "Public Speaking",
+      "Affiliate Marketing & Partnerships",
+      "Overcoming Procrastination",
+      "Mindset & Confidence",
+      "Personal Branding",
+      "Content Strategy",
+      "Lead Generation",
+      "Sales Conversion",
+      "Storytelling for Business",
+      "Business Coaching",
+      "Client Acquisition",
+      "Visibility & Audience Growth",
+      "Offer Creation",
+      "Pricing Strategy",
+      "Referral Partnerships",
+      "Speaker Positioning",
+      "Personal Transformation",
+      "Health & Wellness Coaching",
+      "Business Breakthroughs",
+      "Transformational Leadership",
+    ],
   },
   whatYouGet: {
     heading: "What You Get With Membership",
@@ -144,6 +197,14 @@ export const DEFAULT_SALES_PAGE_CONFIG: SalesPageConfig = {
   aiExpertMatch: {
     heading: "Advanced AI Expert Match",
     body: "Describe your challenge in plain English, and our AI instantly searches every expert's guide content to match you with the right person to learn from — no scrolling through past sessions trying to guess who might have the answer. If nothing in our library directly answers your question, you can send it straight to our team for a personal follow-up.",
+    challenges: [
+      "I'm invisible online",
+      "I want to get paid to speak",
+      "I keep self-sabotaging",
+      "I need better partnerships",
+      "My story isn't converting",
+      "My leads don't convert",
+    ],
   },
   testimonials: [
     { videoUrl: COMING_SOON_CLIP },
@@ -169,6 +230,7 @@ export const DEFAULT_SALES_PAGE_CONFIG: SalesPageConfig = {
   finalCta: {
     heading: "Ready When You Are",
     label: "Join Now — {price}",
+    subtext: "{price}. Cancel anytime. 60-day money-back guarantee.",
   },
   faqItems: [
     {

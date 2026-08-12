@@ -10,6 +10,18 @@
   }
 }
 
+/* Hero orbit animation for /membership -- global (not @layer-scoped) so
+   Tailwind's arbitrary animate-[name_duration_timing_iteration] syntax on
+   that page can reference these keyframe names directly. */
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.06); }
+}
+
 @layer components {
   .input {
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent bg-white text-gray-900;

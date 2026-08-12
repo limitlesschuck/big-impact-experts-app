@@ -23,6 +23,13 @@ const config: Config = {
           orange: "#F26522",
           teal: "#4ECDC4",
           bg: "#F7F8FC",
+          // Added for the /membership Sales Page redesign (matches the
+          // Claude Design reference closely) -- ink/muted/navyDeep are
+          // used repeatedly enough there to warrant real tokens rather
+          // than one-off arbitrary hex values scattered through the page.
+          ink: "#0B1220",
+          muted: "#4A5268",
+          navyDeep: "#071A52",
         },
       },
       fontFamily: {

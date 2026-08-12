@@ -4,6 +4,7 @@ import type { SalesPageConfig, FaqItem, TitledItem } from "@/lib/salesPageConfig
 import { TextField } from "@/components/admin/SettingsFields";
 import FaqListEditor from "@/components/admin/FaqListEditor";
 import TestimonialVideoField from "@/components/admin/TestimonialVideoField";
+import StringListEditor from "@/components/admin/StringListEditor";
 
 export default function SalesPageSettings({
   config,
@@ -16,12 +17,6 @@ export default function SalesPageSettings({
     onChange({ ...config, [key]: value });
   }
 
-  function updateBullet(index: number, value: string) {
-    const bullets = [...config.enhanceSection.bullets];
-    bullets[index] = value;
-    set("enhanceSection", { ...config.enhanceSection, bullets });
-  }
-
   function updateGetItem(index: number, value: string) {
     const items = [...config.whatYouGet.items];
     items[index] = value;
@@ -29,12 +24,16 @@ export default function SalesPageSettings({
   }
 
   function updateTitledItem(
-    section: "howItWorks" | "gettingStarted",
-    field: "items" | "steps",
+    section: "enhanceSection" | "howItWorks" | "gettingStarted",
+    field: "bullets" | "items" | "steps",
     index: number,
     patch: Partial<TitledItem>
   ) {
-    if (section === "howItWorks") {
+    if (section === "enhanceSection") {
+      const bullets = [...config.enhanceSection.bullets];
+      bullets[index] = { ...bullets[index], ...patch };
+      set("enhanceSection", { ...config.enhanceSection, bullets });
+    } else if (section === "howItWorks") {
       const items = [...config.howItWorks.items];
       items[index] = { ...items[index], ...patch };
       set("howItWorks", { ...config.howItWorks, items });
@@ -56,6 +55,11 @@ export default function SalesPageSettings({
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hero</h3>
         <TextField
+          label="Eyebrow badge"
+          value={config.hero.eyebrow}
+          onChange={(v) => set("hero", { ...config.hero, eyebrow: v })}
+        />
+        <TextField
           label="Headline"
           value={config.hero.headline}
           onChange={(v) => set("hero", { ...config.hero, headline: v })}
@@ -73,6 +77,11 @@ export default function SalesPageSettings({
           onChange={(v) => set("hero", { ...config.hero, ctaLabel: v })}
           hint="Links to the checkout URL set under Membership."
         />
+        <TextField
+          label="Supporting line next to CTA"
+          value={config.hero.supportingLine}
+          onChange={(v) => set("hero", { ...config.hero, supportingLine: v })}
+        />
       </div>
 
       <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -89,6 +98,7 @@ export default function SalesPageSettings({
           value={config.whatIsSection.body}
           onChange={(v) => set("whatIsSection", { ...config.whatIsSection, body: v })}
           multiline
+          hint="Leave a blank line between paragraphs -- the first paragraph gets larger display styling, the rest render as normal body text."
         />
       </div>
 
@@ -101,13 +111,24 @@ export default function SalesPageSettings({
           value={config.enhanceSection.heading}
           onChange={(v) => set("enhanceSection", { ...config.enhanceSection, heading: v })}
         />
+        <TextField
+          label="Subhead"
+          value={config.enhanceSection.subhead}
+          onChange={(v) => set("enhanceSection", { ...config.enhanceSection, subhead: v })}
+        />
         {config.enhanceSection.bullets.map((bullet, i) => (
-          <TextField
-            key={i}
-            label={`Bullet ${i + 1}`}
-            value={bullet}
-            onChange={(v) => updateBullet(i, v)}
-          />
+          <div key={i} className="grid grid-cols-2 gap-2">
+            <TextField
+              label={`Bullet ${i + 1} title`}
+              value={bullet.title}
+              onChange={(v) => updateTitledItem("enhanceSection", "bullets", i, { title: v })}
+            />
+            <TextField
+              label={`Bullet ${i + 1} description`}
+              value={bullet.description}
+              onChange={(v) => updateTitledItem("enhanceSection", "bullets", i, { description: v })}
+            />
+          </div>
         ))}
       </div>
 
@@ -172,6 +193,15 @@ export default function SalesPageSettings({
           onChange={(v) => set("topicsSection", { ...config.topicsSection, body: v })}
           multiline
         />
+        <div>
+          <label className="block text-sm text-gray-700 mb-1.5">Topic pills</label>
+          <StringListEditor
+            items={config.topicsSection.topics}
+            onChange={(topics) => set("topicsSection", { ...config.topicsSection, topics })}
+            placeholder="Topic"
+            addLabel="Add topic"
+          />
+        </div>
       </div>
 
       <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -208,6 +238,10 @@ export default function SalesPageSettings({
           onChange={(v) => set("programValue", { ...config.programValue, body: v })}
           multiline
         />
+        <p className="text-xs text-gray-400">
+          Renders alongside "What You Get" as one combined section, with the current membership
+          price shown automatically underneath.
+        </p>
       </div>
 
       <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -225,6 +259,19 @@ export default function SalesPageSettings({
           onChange={(v) => set("aiExpertMatch", { ...config.aiExpertMatch, body: v })}
           multiline
         />
+        <div>
+          <label className="block text-sm text-gray-700 mb-1.5">Challenge pills</label>
+          <p className="text-xs text-gray-400 mb-2">
+            Decorative — these link to Become a Member, they don't run real matching (that
+            requires being logged in). Just illustrates the kinds of challenges members ask about.
+          </p>
+          <StringListEditor
+            items={config.aiExpertMatch.challenges}
+            onChange={(challenges) => set("aiExpertMatch", { ...config.aiExpertMatch, challenges })}
+            placeholder="Challenge"
+            addLabel="Add challenge"
+          />
+        </div>
       </div>
 
       <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -302,6 +349,12 @@ export default function SalesPageSettings({
           value={config.finalCta.label}
           onChange={(v) => set("finalCta", { ...config.finalCta, label: v })}
           hint='Supports a "{price}" token. Links to the checkout URL set under Membership.'
+        />
+        <TextField
+          label="Subtext under the heading"
+          value={config.finalCta.subtext}
+          onChange={(v) => set("finalCta", { ...config.finalCta, subtext: v })}
+          hint='Supports a "{price}" token.'
         />
       </div>
 
