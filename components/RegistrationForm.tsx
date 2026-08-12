@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface RegistrationFormProps {
@@ -15,6 +16,11 @@ export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: Re
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Set on a successful submit from an email that already matches a
+  // Member -- there's nothing to upsell them into, so they get a plain
+  // inline message instead of the VIP offer redirect. No dedicated route
+  // for this; it's one sentence and a login link, not worth a URL.
+  const [alreadyMember, setAlreadyMember] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,15 +34,43 @@ export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: Re
     });
 
     if (res.ok) {
-      const confirmationUrl = surveyUrl
-        ? `/confirmation?survey=${encodeURIComponent(surveyUrl)}`
-        : "/confirmation";
-      router.push(confirmationUrl);
+      const data = await res.json().catch(() => ({}));
+      if (data.alreadyMember) {
+        setAlreadyMember(true);
+        setSubmitting(false);
+        return;
+      }
+      // The VIP offer page shows immediately -- while intent is
+      // highest -- then forwards the same survey param on to
+      // /confirmation once the visitor accepts or declines it, so the
+      // existing pre-event survey step still happens, just one step
+      // later than before.
+      const vipOfferUrl = surveyUrl
+        ? `/vip-offer?survey=${encodeURIComponent(surveyUrl)}`
+        : "/vip-offer";
+      router.push(vipOfferUrl);
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Something went wrong — please try again.");
       setSubmitting(false);
     }
+  }
+
+  if (alreadyMember) {
+    return (
+      <div className="bg-white rounded-2xl p-6 sm:p-8 text-center">
+        <p className="text-lg font-bold text-gray-900 mb-2">Welcome back!</p>
+        <p className="text-sm text-gray-600 mb-6">
+          Looks like you&rsquo;re already a member — log in to access your membership.
+        </p>
+        <Link
+          href="/login"
+          className="inline-block px-8 py-3 rp-bg-navy text-white font-bold rounded-full hover:opacity-90 transition-opacity"
+        >
+          Log In
+        </Link>
+      </div>
+    );
   }
 
   return (

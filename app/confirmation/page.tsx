@@ -1,17 +1,9 @@
 import Link from "next/link";
 import { buildRegisterPageCss } from "@/lib/registerPageConfig";
 import { getRegisterPageConfig } from "@/lib/getRegisterPageConfig";
+import { safeSurveyUrl } from "@/lib/safeUrl";
 
 export const dynamic = "force-dynamic";
-
-// The survey URL arrives via query string from RegistrationForm -- only
-// ever rendered as a plain <a href>, never executed, but we still only
-// trust it as a link if it looks like an actual http(s) URL.
-function safeSurveyUrl(value: string | string[] | undefined): string | null {
-  const url = Array.isArray(value) ? value[0] : value;
-  if (!url) return null;
-  return /^https?:\/\//i.test(url) ? url : null;
-}
 
 export default async function ConfirmationPage({
   searchParams,

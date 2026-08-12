@@ -8,6 +8,7 @@ import {
 } from "@/lib/registerPageConfig";
 import { DEFAULT_SALES_PAGE_CONFIG, type SalesPageConfig } from "@/lib/salesPageConfig";
 import { DEFAULT_HOME_PAGE_CONFIG, type HomePageConfig } from "@/lib/homePageConfig";
+import { DEFAULT_VIP_OFFER_CONFIG, type VipOfferConfig } from "@/lib/vipOfferConfig";
 import {
   Section,
   ColorField,
@@ -17,6 +18,7 @@ import {
 } from "@/components/admin/SettingsFields";
 import SalesPageSettings from "@/components/admin/SalesPageSettings";
 import HomePageSettings from "@/components/admin/HomePageSettings";
+import VipOfferSettings from "@/components/admin/VipOfferSettings";
 
 type DataTool = "slugs" | null;
 
@@ -35,8 +37,11 @@ export default function SettingsPage() {
   const [registerPage, setRegisterPage] = useState<RegisterPageConfig>(DEFAULT_REGISTER_PAGE_CONFIG);
   const [salesPage, setSalesPage] = useState<SalesPageConfig>(DEFAULT_SALES_PAGE_CONFIG);
   const [homePage, setHomePage] = useState<HomePageConfig>(DEFAULT_HOME_PAGE_CONFIG);
+  const [vipOffer, setVipOffer] = useState<VipOfferConfig>(DEFAULT_VIP_OFFER_CONFIG);
   const [membershipCheckoutUrl, setMembershipCheckoutUrl] = useState("https://go.bigimpactexperts.com/join");
   const [membershipPriceLabel, setMembershipPriceLabel] = useState("$39/mo");
+  const [vipOfferCheckoutUrl, setVipOfferCheckoutUrl] = useState("https://go.bigimpactexperts.com/vip");
+  const [vipOfferPrice, setVipOfferPrice] = useState("$29/mo");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -83,8 +88,11 @@ export default function SettingsPage() {
         if (data.registerPage) setRegisterPage(deepMerge(DEFAULT_REGISTER_PAGE_CONFIG, data.registerPage));
         if (data.salesPage) setSalesPage(deepMerge(DEFAULT_SALES_PAGE_CONFIG, data.salesPage));
         if (data.homePage) setHomePage(deepMerge(DEFAULT_HOME_PAGE_CONFIG, data.homePage));
+        if (data.vipOffer) setVipOffer(deepMerge(DEFAULT_VIP_OFFER_CONFIG, data.vipOffer));
         if (typeof data.membershipCheckoutUrl === "string") setMembershipCheckoutUrl(data.membershipCheckoutUrl);
         if (typeof data.membershipPriceLabel === "string") setMembershipPriceLabel(data.membershipPriceLabel);
+        if (typeof data.vipOfferCheckoutUrl === "string") setVipOfferCheckoutUrl(data.vipOfferCheckoutUrl);
+        if (typeof data.vipOfferPrice === "string") setVipOfferPrice(data.vipOfferPrice);
       });
   }, []);
 
@@ -101,8 +109,11 @@ export default function SettingsPage() {
         registerPage,
         salesPage,
         homePage,
+        vipOffer,
         membershipCheckoutUrl,
         membershipPriceLabel,
+        vipOfferCheckoutUrl,
+        vipOfferPrice,
       }),
     });
     if (res.ok) {
@@ -555,6 +566,18 @@ export default function SettingsPage() {
           onChange={setMembershipPriceLabel}
           hint={'Shown wherever Sales/Home page copy includes a "{price}" token.'}
         />
+        <TextField
+          label="VIP offer checkout URL"
+          value={vipOfferCheckoutUrl}
+          onChange={setVipOfferCheckoutUrl}
+          hint="Where the /vip-offer page's CTA button links to."
+        />
+        <TextField
+          label="VIP offer price label"
+          value={vipOfferPrice}
+          onChange={setVipOfferPrice}
+          hint={'Shown wherever the VIP Offer page copy includes a "{price}" token.'}
+        />
         <div className="flex justify-end pt-2">
           <button
             onClick={handleSave}
@@ -584,6 +607,22 @@ export default function SettingsPage() {
 
       <Section title="Home Page (/)" subtitle="All copy on the public home page.">
         <HomePageSettings config={homePage} onChange={setHomePage} />
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      </Section>
+
+      <Section
+        title="VIP Offer (/vip-offer)"
+        subtitle="Shown to non-members immediately after registering for an event, before the pre-event survey step."
+      >
+        <VipOfferSettings config={vipOffer} onChange={setVipOffer} />
         <div className="flex justify-end pt-2">
           <button
             onClick={handleSave}

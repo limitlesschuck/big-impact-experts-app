@@ -24,15 +24,31 @@ export async function POST(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   // emailSynced stays false -- the outbound Systeme.io sync is a
   // separately planned task that will pick these rows up.
   const registration = await prisma.registration.create({
     data: {
       eventId: event.id,
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
     },
   });
 
-  return NextResponse.json({ success: true, registrationId: registration.id });
+  // Drives the post-registration branch client-side: an existing member
+  // gets a "welcome back, log in" message instead of the VIP upgrade
+  // offer (they're already a member -- there's nothing to upsell). Same
+  // lowercase-exact-match lookup already used for member login
+  // (lib/auth.ts), not a case-insensitive search.
+  const existingMember = await prisma.member.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true },
+  });
+
+  return NextResponse.json({
+    success: true,
+    registrationId: registration.id,
+    alreadyMember: !!existingMember,
+  });
 }
