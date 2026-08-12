@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MAX_PANELISTS_PER_EVENT } from "@/lib/panelistLimits";
+import { extractR2Key, deleteR2Objects } from "@/lib/r2";
 
 export async function GET(
   _req: NextRequest,
@@ -249,4 +250,94 @@ export async function PATCH(
   });
 
   return NextResponse.json(event);
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session || !["super_admin", "editor"].includes(session.user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const confirmTitle = typeof body?.confirmTitle === "string" ? body.confirmTitle : "";
+
+  const event = await prisma.event.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      titleOriginal: true,
+      panelists: { select: { id: true, headshotUrl: true, clipUrl: true, guidePdfUrl: true } },
+    },
+  });
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  // Re-validated server-side, same reasoning as Member delete -- a stray
+  // or replayed DELETE request without a matching confirmTitle must not
+  // be able to delete the row.
+  if (confirmTitle !== event.titleOriginal) {
+    return NextResponse.json(
+      { error: "confirmTitle does not match this event's title" },
+      { status: 400 }
+    );
+  }
+
+  const panelistIds = event.panelists.map((p) => p.id);
+
+  // DB rows first, R2 files after commit -- see the R2 cleanup comment
+  // below for why the order matters here. Everything that references a
+  // panelist or this event has to be cleared before the Panelist/Event
+  // rows themselves can be deleted (no onDelete: Cascade is configured,
+  // so Postgres rejects the delete otherwise).
+  try {
+    await prisma.$transaction([
+      prisma.aiContentLog.deleteMany({ where: { panelistId: { in: panelistIds } } }),
+      // Defensive: matchedPanelistId is meant to only ever point at a
+      // panelist on the same event, but the FK doesn't enforce that --
+      // null out any cross-event reference before these panelists are
+      // gone, not just this event's own segments (deleted next).
+      prisma.transcriptSegment.updateMany({
+        where: { matchedPanelistId: { in: panelistIds } },
+        data: { matchedPanelistId: null },
+      }),
+      prisma.toolEntry.deleteMany({ where: { panelistId: { in: panelistIds } } }),
+      prisma.panelist.deleteMany({ where: { eventId: params.id } }),
+      prisma.transcriptSegment.deleteMany({ where: { eventId: params.id } }),
+      prisma.registration.deleteMany({ where: { eventId: params.id } }),
+      prisma.publishLog.deleteMany({ where: { eventId: params.id } }),
+      // Lead is the dormant Phase-3 funnel table (unused by BIE today)
+      // with an optional sourceEventId -- defensively cleared rather
+      // than assumed empty.
+      prisma.lead.updateMany({ where: { sourceEventId: params.id }, data: { sourceEventId: null } }),
+      prisma.event.delete({ where: { id: params.id } }),
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Delete failed";
+    console.error("Event delete error:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  // Best-effort, after the DB transaction has already committed -- an
+  // orphaned R2 file (invisible to the app, nothing references it
+  // anymore) is a much safer failure mode than the reverse order would
+  // be: if R2 cleanup ran first and then the DB delete failed, the event
+  // would still be live with broken image/video/PDF links.
+  const keys = event.panelists.flatMap((p) => [
+    extractR2Key(p.headshotUrl),
+    extractR2Key(p.clipUrl),
+    extractR2Key(p.guidePdfUrl),
+  ]);
+  let warning: string | undefined;
+  try {
+    await deleteR2Objects(keys);
+  } catch (error) {
+    console.error("R2 cleanup error after event delete:", error);
+    warning = "Event deleted, but some files couldn't be removed from storage.";
+  }
+
+  return NextResponse.json({ success: true, warning });
 }

@@ -145,6 +145,18 @@ export default function EventDetailPage() {
     text: string;
   } | null>(null);
 
+  const [deleteEventModalOpen, setDeleteEventModalOpen] = useState(false);
+  const [deleteEventConfirmText, setDeleteEventConfirmText] = useState("");
+  const [deletingEventInFlight, setDeletingEventInFlight] = useState(false);
+  const [deleteEventError, setDeleteEventError] = useState("");
+
+  const [deletingPanelist, setDeletingPanelist] = useState<{ id: string; name: string } | null>(
+    null
+  );
+  const [deletePanelistConfirmText, setDeletePanelistConfirmText] = useState("");
+  const [deletingPanelistInFlight, setDeletingPanelistInFlight] = useState(false);
+  const [deletePanelistError, setDeletePanelistError] = useState("");
+
   const [slugEditing, setSlugEditing] = useState(false);
 
   const [form, setForm] = useState({
@@ -330,6 +342,56 @@ export default function EventDetailPage() {
       setMessage({ type: "error", text: data.error ?? "Save failed" });
     }
     setSaving(false);
+  }
+
+  async function handleDeleteEvent() {
+    setDeletingEventInFlight(true);
+    setDeleteEventError("");
+    const res = await fetch(`/api/admin/episodes/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmTitle: deleteEventConfirmText }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      router.push("/admin/episodes");
+    } else {
+      setDeleteEventError(data.error ?? "Failed to delete event");
+      setDeletingEventInFlight(false);
+    }
+  }
+
+  function openDeletePanelist(p: { id: string; name: string }) {
+    setDeletingPanelist(p);
+    setDeletePanelistConfirmText("");
+    setDeletePanelistError("");
+  }
+
+  async function handleDeletePanelist() {
+    if (!deletingPanelist) return;
+    setDeletingPanelistInFlight(true);
+    setDeletePanelistError("");
+    const res = await fetch(
+      `/api/admin/episodes/${id}/panelists/${deletingPanelist.id}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmName: deletePanelistConfirmText }),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setDeletingPanelist(null);
+      setMessage(
+        data.warning
+          ? { type: "error", text: data.warning }
+          : { type: "success", text: "Panelist deleted" }
+      );
+      loadEvent();
+    } else {
+      setDeletePanelistError(data.error ?? "Failed to delete panelist");
+      setDeletingPanelistInFlight(false);
+    }
   }
 
   function startGuideProgress(panelistId: string) {
@@ -1366,6 +1428,16 @@ export default function EventDetailPage() {
                         />
                       </Field>
                     </div>
+
+                    <div className="pt-4 mt-4 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => openDeletePanelist({ id: p.id, name: pf.name })}
+                        className="text-xs font-medium text-red-600 hover:underline"
+                      >
+                        Delete panelist
+                      </button>
+                    </div>
                   </CollapsibleSection>
                 );
               })}
@@ -1819,8 +1891,103 @@ export default function EventDetailPage() {
               </button>
             )}
           </CollapsibleSection>
+
+          <CollapsibleSection title="Danger zone" defaultOpen={false}>
+            <p className="text-xs text-gray-500 mb-3">
+              Permanently deletes this event and every panelist on it, including their guide
+              content, gifts, and files in storage. This cannot be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDeleteEventModalOpen(true)}
+              className="w-full px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Delete event
+            </button>
+          </CollapsibleSection>
         </div>
       </div>
+
+      {deleteEventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete event</h2>
+            <p className="text-sm text-gray-600 mb-1">
+              This permanently deletes{" "}
+              <span className="font-medium">{event.titleOriginal}</span> and all of its
+              panelists, guide content, gifts, registrations, and files in storage. This cannot
+              be undone.
+            </p>
+            <p className="text-sm text-gray-600 mb-4">Type the event title to confirm:</p>
+            <input
+              type="text"
+              value={deleteEventConfirmText}
+              onChange={(e) => setDeleteEventConfirmText(e.target.value)}
+              placeholder={event.titleOriginal}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4"
+            />
+            {deleteEventError && (
+              <p className="text-sm text-red-600 mb-4">{deleteEventError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeleteEvent}
+                disabled={deleteEventConfirmText !== event.titleOriginal || deletingEventInFlight}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deletingEventInFlight ? "Deleting..." : "Delete permanently"}
+              </button>
+              <button
+                onClick={() => setDeleteEventModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingPanelist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete panelist</h2>
+            <p className="text-sm text-gray-600 mb-1">
+              This permanently deletes{" "}
+              <span className="font-medium">{deletingPanelist.name}</span> and their guide
+              content, gifts, and files in storage. This cannot be undone.
+            </p>
+            <p className="text-sm text-gray-600 mb-4">Type the panelist&rsquo;s name to confirm:</p>
+            <input
+              type="text"
+              value={deletePanelistConfirmText}
+              onChange={(e) => setDeletePanelistConfirmText(e.target.value)}
+              placeholder={deletingPanelist.name}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4"
+            />
+            {deletePanelistError && (
+              <p className="text-sm text-red-600 mb-4">{deletePanelistError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleDeletePanelist}
+                disabled={
+                  deletePanelistConfirmText !== deletingPanelist.name || deletingPanelistInFlight
+                }
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deletingPanelistInFlight ? "Deleting..." : "Delete permanently"}
+              </button>
+              <button
+                onClick={() => setDeletingPanelist(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
