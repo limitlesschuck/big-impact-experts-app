@@ -43,6 +43,11 @@ export default function HomePageSettings({
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hero</h3>
         <TextField
+          label="Eyebrow badge"
+          value={config.hero.eyebrow}
+          onChange={(v) => set("hero", { ...config.hero, eyebrow: v })}
+        />
+        <TextField
           label="Headline"
           value={config.hero.headline}
           onChange={(v) => set("hero", { ...config.hero, headline: v })}
@@ -55,14 +60,20 @@ export default function HomePageSettings({
           multiline
         />
         <TextField
-          label="CTA button label"
-          value={config.hero.ctaLabel}
-          onChange={(v) => set("hero", { ...config.hero, ctaLabel: v })}
+          label="Primary CTA button label"
+          value={config.hero.primaryCtaLabel}
+          onChange={(v) => set("hero", { ...config.hero, primaryCtaLabel: v })}
+          hint="Always links to /register."
+        />
+        <TextField
+          label="Secondary CTA button label"
+          value={config.hero.secondaryCtaLabel}
+          onChange={(v) => set("hero", { ...config.hero, secondaryCtaLabel: v })}
         />
         <CtaTargetField
-          label="CTA links to"
-          value={config.hero.ctaTarget}
-          onChange={(v) => set("hero", { ...config.hero, ctaTarget: v })}
+          label="Secondary CTA links to"
+          value={config.hero.secondaryCtaTarget}
+          onChange={(v) => set("hero", { ...config.hero, secondaryCtaTarget: v })}
         />
       </div>
 

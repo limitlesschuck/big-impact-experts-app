@@ -4,6 +4,7 @@ import {
 import { buildRegisterPageCss, type RegisterPageConfig } from "@/lib/registerPageConfig";
 import CountdownBar from "@/components/CountdownBar";
 import RegistrationForm from "@/components/RegistrationForm";
+import { jakarta, DISPLAY } from "@/lib/fonts";
 
 // Shared by the public /register page and the member dashboard's Upcoming
 // Events page (app/dashboard/upcoming) -- both render the exact same
@@ -70,12 +71,12 @@ function ExpertCard({
         <img
           src={headshotUrl}
           alt={name}
-          className="rp-card-headshot rounded-full object-cover mx-auto mb-4 border border-gray-200"
+          className="rp-card-headshot rounded-2xl object-cover mx-auto mb-4 border border-gray-200"
         />
       ) : (
-        <div className="rp-card-headshot rounded-full bg-gray-100 mx-auto mb-4" />
+        <div className="rp-card-headshot rounded-2xl bg-gray-100 mx-auto mb-4" />
       )}
-      <p className="rp-card-name font-bold text-gray-900">{name}</p>
+      <p className={`${DISPLAY} rp-card-name font-bold text-gray-900`}>{name}</p>
       {title && <p className="rp-card-title rp-orange capitalize mt-1">{title}</p>}
       {bio && <p className="rp-card-bio text-gray-500 mt-2 leading-relaxed">{bio}</p>}
     </div>
@@ -94,7 +95,7 @@ export default function RegisterPageContent({
 
   if (!event) {
     return (
-      <div className="min-h-screen rp-bg-page flex items-center justify-center px-6">
+      <div className={`${jakarta.className} min-h-screen rp-bg-page flex items-center justify-center px-6`}>
         <style dangerouslySetInnerHTML={{ __html: css }} />
         <p className="text-lg text-gray-600 text-center">{t.nothingScheduledMessage}</p>
       </div>
@@ -110,16 +111,17 @@ export default function RegisterPageContent({
   const subheading = orDefault(event.registrationSubheading, t.defaultRegistrationSubheading);
 
   return (
-    <div className="min-h-screen rp-bg-page">
+    <div className={`${jakarta.className} min-h-screen rp-bg-page`}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
 
       {/* Hero */}
-      <div className="rp-bg-navy">
-        <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 lg:pt-28 pb-16 sm:pb-20 text-center">
+      <div className="relative rp-bg-navy overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_20%,rgba(78,205,196,0.18),transparent_45%)] pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 sm:pt-24 lg:pt-28 pb-16 sm:pb-20 text-center">
           <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-6">
             {t.heroEyebrowPrefix} {formatEventDate(event.eventDate)}
           </p>
-          <h1 className="rp-hero-title font-bold text-white leading-tight mb-6">
+          <h1 className={`${DISPLAY} rp-hero-title font-extrabold leading-[1.04] tracking-tight text-white mb-6`}>
             {renderEmphasizedTitle(heroTitle)}
           </h1>
           <p className="rp-hero-subtitle text-white/70 max-w-2xl mx-auto mb-14">
@@ -139,7 +141,7 @@ export default function RegisterPageContent({
 
           <a
             href="#register"
-            className="rp-button-text inline-block px-10 py-5 rp-bg-orange text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+            className="rp-button-text inline-block px-10 py-5 rp-bg-orange text-white font-bold rounded-full shadow-[0_16px_40px_-12px_rgba(242,101,34,0.6)] hover:opacity-90 transition-opacity"
           >
             {t.heroCtaButton}
           </a>
@@ -152,7 +154,7 @@ export default function RegisterPageContent({
         <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4 text-center">
           {t.expertsEyebrow}
         </p>
-        <h2 className="rp-section-heading font-bold rp-navy text-center mb-4">
+        <h2 className={`${DISPLAY} rp-section-heading font-extrabold tracking-tight rp-navy text-center mb-4`}>
           {t.expertsHeading}
         </h2>
         <p className="rp-section-subhead text-gray-500 text-center max-w-2xl mx-auto mb-16">
@@ -185,8 +187,10 @@ export default function RegisterPageContent({
               <p className="rp-eyebrow rp-teal font-semibold tracking-widest uppercase mb-4">
                 {t.hostNoteEyebrow}
               </p>
-              <h2 className="rp-section-heading font-bold rp-navy mb-8">{t.hostNoteHeading}</h2>
-              <div className="rp-host-note-body font-serif text-gray-700 leading-relaxed space-y-5">
+              <h2 className={`${DISPLAY} rp-section-heading font-extrabold tracking-tight rp-navy mb-8`}>
+                {t.hostNoteHeading}
+              </h2>
+              <div className="rp-host-note-body text-gray-700 leading-relaxed space-y-5">
                 {event.hostNote
                   .split("\n")
                   .map((l) => l.trim())
@@ -219,7 +223,9 @@ export default function RegisterPageContent({
             {t.finalCtaEyebrowPrefix} {formatEventDate(event.eventDate)} —{" "}
             {formatEventTime(event.eventDate)}
           </p>
-          <h2 className="rp-section-heading font-bold text-white mb-6">{heading}</h2>
+          <h2 className={`${DISPLAY} rp-section-heading font-extrabold tracking-tight text-white mb-6`}>
+            {heading}
+          </h2>
           <p className="rp-hero-subtitle text-white/70 mb-10">{subheading}</p>
           <RegistrationForm
             eventId={event.id}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DISPLAY } from "@/lib/fonts";
 
 function getTimeParts(target: Date) {
   const diff = Math.max(0, target.getTime() - Date.now());
@@ -17,7 +18,7 @@ function Unit({ value, label, orange = false }: { value: number; label: string; 
   return (
     <div className="flex flex-col items-center">
       <span
-        className={`rp-countdown-digit font-bold tabular-nums ${orange ? "rp-orange" : "text-white"}`}
+        className={`${DISPLAY} rp-countdown-digit font-extrabold tabular-nums ${orange ? "rp-orange" : "text-white"}`}
       >
         {String(value).padStart(2, "0")}
       </span>
@@ -35,7 +36,7 @@ function Unit({ value, label, orange = false }: { value: number; label: string; 
 function Colon() {
   return (
     <div className="flex flex-col items-center" aria-hidden="true">
-      <span className="rp-countdown-digit font-bold text-white/25">:</span>
+      <span className={`${DISPLAY} rp-countdown-digit font-extrabold text-white/25`}>:</span>
       <span className="rp-countdown-label font-semibold mt-2 invisible">:</span>
     </div>
   );

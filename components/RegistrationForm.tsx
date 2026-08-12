@@ -75,7 +75,7 @@ export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: Re
       <button
         type="submit"
         disabled={submitting}
-        className="rp-button-text w-full py-4 rp-bg-orange text-white font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="rp-button-text w-full py-4 rp-bg-orange text-white font-bold rounded-full hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         {submitting ? "Registering..." : buttonLabel}
       </button>

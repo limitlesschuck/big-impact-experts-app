@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
 import HeroOrbit from "@/components/marketing/HeroOrbit";
 import FaqAccordion from "@/components/marketing/FaqAccordion";
+import Eyebrow from "@/components/marketing/Eyebrow";
+import SectionHeading from "@/components/marketing/SectionHeading";
+import DuotoneExpertCard from "@/components/marketing/DuotoneExpertCard";
 import {
   EyeIcon,
   MicIcon,
@@ -18,21 +20,9 @@ import {
 import { getSalesPageConfig } from "@/lib/getSalesPageConfig";
 import { getMembershipConfig, interpolatePrice } from "@/lib/siteConfig";
 import { getFeaturedPanelists } from "@/lib/eventAccess";
+import { jakarta, DISPLAY } from "@/lib/fonts";
 
 export const dynamic = "force-dynamic";
-
-// Scoped to this page only -- the site's global font stays Inter
-// (tailwind.config.ts `sans`), set once in globals.css. Matching the
-// Claude Design reference's typography is specific to the sales page.
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-const DISPLAY = bricolage.className;
 
 const FEATURED_EXPERTS_LIMIT = 9;
 const ORBIT_EXPERTS_LIMIT = 6;
@@ -40,47 +30,6 @@ const ORBIT_EXPERTS_LIMIT = 6;
 const ENHANCE_ICONS = [EyeIcon, MicIcon, TargetIcon, PartnershipIcon, StoryIcon];
 const HOW_IT_WORKS_ICONS = [CalendarCheckIcon, ChecklistIcon, PlayCircleIcon, NetworkIcon];
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3.5 mb-5">
-      <span className="w-9 h-0.5 bg-brand-orange block" />
-      <span className="text-sm font-bold tracking-widest uppercase text-brand-orange">
-        {children}
-      </span>
-    </div>
-  );
-}
-
-function SectionHeading({
-  heading,
-  subhead,
-  light,
-}: {
-  heading: string;
-  subhead?: string;
-  light?: boolean;
-}) {
-  return (
-    <div className="mb-11">
-      <h2
-        className={`${DISPLAY} text-[clamp(28px,3.4vw,42px)] font-extrabold tracking-tight mb-3 ${
-          light ? "text-white" : "text-brand-ink"
-        }`}
-      >
-        {heading}
-      </h2>
-      {subhead && (
-        <p className={`text-[17px] max-w-xl ${light ? "text-white/60" : "text-brand-muted"}`}>
-          {subhead}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function panelistSpecialty(p: { titleByline: string | null; titleAreaOfExpertise: string | null }) {
-  return p.titleByline || p.titleAreaOfExpertise || "";
-}
 
 export default async function MembershipPage() {
   const [config, membership, allExperts] = await Promise.all([
@@ -213,29 +162,7 @@ export default async function MembershipPage() {
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {allExperts.map((p) => (
-                <div key={p.id} className="rounded-[20px] overflow-hidden bg-[#141C30]">
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    {p.headshotUrl ? (
-                      <img
-                        src={p.headshotUrl}
-                        alt={p.name}
-                        className="w-full h-full object-cover [filter:grayscale(1)_contrast(1.1)_brightness(1.05)]"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-brand-navyDeep" />
-                    )}
-                    <div className="absolute inset-0 bg-[linear-gradient(200deg,rgba(9,68,185,0.55),rgba(78,205,196,0.35))] mix-blend-color" />
-                    <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(11,18,32,0.9),transparent_55%)]" />
-                    <div className="absolute left-4 right-4 bottom-3.5">
-                      <div className={`${DISPLAY} font-bold text-lg text-white`}>{p.name}</div>
-                      {panelistSpecialty(p) && (
-                        <div className="text-[13px] font-semibold text-brand-teal mt-0.5">
-                          {panelistSpecialty(p)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <DuotoneExpertCard key={p.id} panelist={p} />
               ))}
             </div>
           </div>
