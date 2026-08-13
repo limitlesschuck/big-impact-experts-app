@@ -160,6 +160,7 @@ export default function EventDetailPage() {
   const [slugEditing, setSlugEditing] = useState(false);
 
   const [form, setForm] = useState({
+    titleOriginal: "",
     titleYoutube: "",
     titlePodcast: "",
     descriptionYoutube: "",
@@ -238,6 +239,7 @@ export default function EventDetailPage() {
     const data: Event = await res.json();
     setEvent(data);
     setForm({
+      titleOriginal: data.titleOriginal ?? "",
       titleYoutube: data.titleYoutube ?? "",
       titlePodcast: data.titlePodcast ?? "",
       descriptionYoutube: data.descriptionYoutube ?? "",
@@ -782,20 +784,28 @@ export default function EventDetailPage() {
         </div>
       )}
 
+      <div className="mb-6">
+        <Field label="Event title">
+          <input
+            type="text"
+            value={form.titleOriginal}
+            onChange={(e) => setForm((f) => ({ ...f, titleOriginal: e.target.value }))}
+            className="input text-lg font-semibold"
+          />
+        </Field>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <CollapsibleSection title="Original content (read only)" defaultOpen={false}>
-            <Field label="Original title">
-              <p className="text-sm text-gray-700">{event.titleOriginal}</p>
-            </Field>
-            {event.descriptionOriginal && (
+          {event.descriptionOriginal && (
+            <CollapsibleSection title="Original description (read only)" defaultOpen={false}>
               <Field label="Original description">
                 <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-6">
                   {event.descriptionOriginal}
                 </p>
               </Field>
-            )}
-          </CollapsibleSection>
+            </CollapsibleSection>
+          )}
 
           <CollapsibleSection title="YouTube / podcast repurposing" defaultOpen={false}>
             <Field label="YouTube title">
