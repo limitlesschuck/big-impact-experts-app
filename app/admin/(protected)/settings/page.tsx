@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [membershipPriceLabel, setMembershipPriceLabel] = useState("$39/mo");
   const [vipOfferCheckoutUrl, setVipOfferCheckoutUrl] = useState("https://go.bigimpactexperts.com/vip");
   const [vipOfferPrice, setVipOfferPrice] = useState("$29/mo");
+  const [systemeReferralFieldSlug, setSystemeReferralFieldSlug] = useState("original_affiliate");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -93,6 +94,8 @@ export default function SettingsPage() {
         if (typeof data.membershipPriceLabel === "string") setMembershipPriceLabel(data.membershipPriceLabel);
         if (typeof data.vipOfferCheckoutUrl === "string") setVipOfferCheckoutUrl(data.vipOfferCheckoutUrl);
         if (typeof data.vipOfferPrice === "string") setVipOfferPrice(data.vipOfferPrice);
+        if (typeof data.systemeReferralFieldSlug === "string")
+          setSystemeReferralFieldSlug(data.systemeReferralFieldSlug);
       });
   }, []);
 
@@ -114,6 +117,7 @@ export default function SettingsPage() {
         membershipPriceLabel,
         vipOfferCheckoutUrl,
         vipOfferPrice,
+        systemeReferralFieldSlug,
       }),
     });
     if (res.ok) {
@@ -577,6 +581,27 @@ export default function SettingsPage() {
           value={vipOfferPrice}
           onChange={setVipOfferPrice}
           hint={'Shown wherever the VIP Offer page copy includes a "{price}" token.'}
+        />
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      </Section>
+
+      <Section
+        title="Referral tracking"
+        subtitle="Registrations captured with a ?ref= parameter on /register are synced to Systeme.io as a contact custom field."
+      >
+        <TextField
+          label="Systeme.io custom field slug"
+          value={systemeReferralFieldSlug}
+          onChange={setSystemeReferralFieldSlug}
+          hint="The custom field in Systeme.io that receives the referral value (its slug, not display name) -- must already exist on your Systeme.io account."
         />
         <div className="flex justify-end pt-2">
           <button

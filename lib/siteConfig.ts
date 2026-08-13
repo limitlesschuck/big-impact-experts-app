@@ -44,6 +44,29 @@ export async function getMembershipConfig(): Promise<MembershipConfig> {
   };
 }
 
+export interface SystemeConfig {
+  referralFieldSlug: string;
+}
+
+const DEFAULT_SYSTEME_CONFIG: SystemeConfig = {
+  referralFieldSlug: "original_affiliate",
+};
+
+// The Systeme.io custom field that receives Registration.referredBy --
+// configurable rather than hardcoded since the field's slug is specific
+// to this Systeme.io account/setup, not something safe to assume for a
+// future white-labeled instance.
+export async function getSystemeConfig(): Promise<SystemeConfig> {
+  const record = await prisma.siteConfig.findFirst();
+  const config = record?.config as Record<string, unknown> | null;
+  return {
+    referralFieldSlug:
+      typeof config?.systemeReferralFieldSlug === "string" && config.systemeReferralFieldSlug
+        ? config.systemeReferralFieldSlug
+        : DEFAULT_SYSTEME_CONFIG.referralFieldSlug,
+  };
+}
+
 // Default copy for the Sales/Home/VIP-offer pages embeds a price as a
 // "{price}" token instead of a hardcoded value -- this is the one place
 // that token gets resolved, so every place it appears stays in sync with

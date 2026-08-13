@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSystemeConfig } from "@/lib/siteConfig";
+import { syncRegistrationToSysteme } from "@/lib/systeme";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
   const body = await req.json();
-  const { name, email } = body as { name?: string; email?: string };
+  const { name, email, referredBy } = body as {
+    name?: string;
+    email?: string;
+    referredBy?: string;
+  };
 
   if (!name?.trim() || !email?.trim()) {
     return NextResponse.json(
@@ -33,16 +39,33 @@ export async function POST(
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const trimmedReferredBy = referredBy?.trim() || null;
 
-  // emailSynced stays false -- the outbound Systeme.io sync is a
-  // separately planned task that will pick these rows up.
   const registration = await prisma.registration.create({
     data: {
       eventId: event.id,
       name: name.trim(),
       email: normalizedEmail,
+      referredBy: trimmedReferredBy,
     },
   });
+
+  // Best-effort, after the row is already saved -- a sync failure must
+  // never block registration. emailSynced stays false so it's visible in
+  // the admin Registrations report for manual follow-up.
+  const systemeConfig = await getSystemeConfig();
+  const synced = await syncRegistrationToSysteme({
+    email: normalizedEmail,
+    name: name.trim(),
+    referredBy: trimmedReferredBy,
+    referralFieldSlug: systemeConfig.referralFieldSlug,
+  });
+  if (synced) {
+    await prisma.registration.update({
+      where: { id: registration.id },
+      data: { emailSynced: true },
+    });
+  }
 
   // Drives the post-registration branch client-side: an existing member
   // gets a "welcome back, log in" message instead of the VIP upgrade

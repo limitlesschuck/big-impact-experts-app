@@ -145,15 +145,19 @@ model Event {
 }
 
 // ── In-app event registration (replaces the Systeme.io funnel) ────
-// The outbound Systeme.io sync is a separately planned task; emailSynced
-// marks rows that task should pick up, matching the same convention
-// already used on Lead.emailSynced.
+// emailSynced marks whether the outbound Systeme.io contact sync
+// (lib/systeme.ts, fired from the register route) succeeded for this row.
 
 model Registration {
   id          String   @id @default(cuid())
   eventId     String
   name        String
   email       String
+  // Free-text referral slug from /register?ref=<value> -- not tied to
+  // any external platform's ID scheme (see lib/systeme.ts), just
+  // whatever string the referral link used. Forwarded verbatim to
+  // Systeme.io's configured custom field when present.
+  referredBy  String?
   emailSynced Boolean  @default(false)
   createdAt   DateTime @default(now())
 

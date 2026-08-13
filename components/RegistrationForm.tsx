@@ -8,9 +8,15 @@ interface RegistrationFormProps {
   eventId: string;
   buttonLabel: string;
   surveyUrl: string | null;
+  referredBy?: string;
 }
 
-export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: RegistrationFormProps) {
+export default function RegistrationForm({
+  eventId,
+  buttonLabel,
+  surveyUrl,
+  referredBy,
+}: RegistrationFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,7 +36,7 @@ export default function RegistrationForm({ eventId, buttonLabel, surveyUrl }: Re
     const res = await fetch(`/api/events/${eventId}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({ name, email, referredBy }),
     });
 
     if (res.ok) {

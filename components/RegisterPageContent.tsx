@@ -86,9 +86,11 @@ function ExpertCard({
 export default function RegisterPageContent({
   event,
   config,
+  referredBy,
 }: {
   event: PublicEventForRegistration | null;
   config: RegisterPageConfig;
+  referredBy?: string;
 }) {
   const css = buildRegisterPageCss(config);
   const t = config.text;
@@ -231,6 +233,7 @@ export default function RegisterPageContent({
             eventId={event.id}
             buttonLabel={t.heroCtaButton}
             surveyUrl={event.surveyUrl}
+            referredBy={referredBy}
           />
           <p className="rp-small-print text-white/50 mt-6">
             {formatEventDate(event.eventDate)} · {formatEventTime(event.eventDate)} —{" "}
