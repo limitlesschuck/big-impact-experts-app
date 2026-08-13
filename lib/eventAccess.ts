@@ -108,6 +108,28 @@ export type PublicEventForRegistration = NonNullable<
   Awaited<ReturnType<typeof getPublicEventForRegistration>>
 >;
 
+// Home "Upcoming Events" teaser -- unlike getSoonestUpcomingEvent (one
+// event, full registration-page field set), this needs several events
+// with just enough fields to render a thumbnail card.
+export async function getUpcomingEventsForHome(limit: number) {
+  return prisma.event.findMany({
+    where: { eventDate: { gte: new Date() }, publishStatus: "published" },
+    orderBy: { eventDate: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      titleOriginal: true,
+      titleYoutube: true,
+      eventDate: true,
+      youtubeThumbnailUrl: true,
+      coverArtUrl: true,
+      thumbnailUrl: true,
+    },
+  });
+}
+
+export type UpcomingHomeEvent = Awaited<ReturnType<typeof getUpcomingEventsForHome>>[number];
+
 // ── Member Dashboard ─────────────────────────────────────────────────
 // Access is gated by Member.status (checked live in
 // app/dashboard/layout.tsx, since a JWT can't carry mutable state), plus

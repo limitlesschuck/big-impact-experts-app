@@ -150,6 +150,11 @@ export default function EventDetailPage() {
   const [deletingEventInFlight, setDeletingEventInFlight] = useState(false);
   const [deleteEventError, setDeleteEventError] = useState("");
 
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [duplicateEventDate, setDuplicateEventDate] = useState("");
+  const [duplicatingInFlight, setDuplicatingInFlight] = useState(false);
+  const [duplicateError, setDuplicateError] = useState("");
+
   const [deletingPanelist, setDeletingPanelist] = useState<{ id: string; name: string } | null>(
     null
   );
@@ -360,6 +365,23 @@ export default function EventDetailPage() {
     } else {
       setDeleteEventError(data.error ?? "Failed to delete event");
       setDeletingEventInFlight(false);
+    }
+  }
+
+  async function handleDuplicateEvent() {
+    setDuplicatingInFlight(true);
+    setDuplicateError("");
+    const res = await fetch(`/api/admin/episodes/${id}/duplicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventDate: duplicateEventDate }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.id) {
+      router.push(`/admin/episodes/${data.id}`);
+    } else {
+      setDuplicateError(data.error ?? "Failed to duplicate event");
+      setDuplicatingInFlight(false);
     }
   }
 
@@ -1878,6 +1900,17 @@ export default function EventDetailPage() {
             >
               Cancel
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDuplicateEventDate("");
+                setDuplicateError("");
+                setDuplicateModalOpen(true);
+              }}
+              className="w-full px-4 py-2 text-sm font-medium text-brand-purple bg-white border border-gray-200 rounded-lg hover:bg-purple-50 transition-colors"
+            >
+              Duplicate event
+            </button>
           </div>
 
           <CollapsibleSection title="Sync & distribution" defaultOpen={false}>
@@ -1949,6 +1982,45 @@ export default function EventDetailPage() {
               </button>
               <button
                 onClick={() => setDeleteEventModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Duplicate event</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Creates a new draft copy of{" "}
+              <span className="font-medium">{event.titleOriginal}</span> with its title,
+              description, host info, and content carried over. Panelists, the replay URL,
+              transcript, and registrations start empty on the new event.
+            </p>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              New event date &amp; time
+            </label>
+            <input
+              type="datetime-local"
+              value={duplicateEventDate}
+              onChange={(e) => setDuplicateEventDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent mb-4"
+            />
+            {duplicateError && <p className="text-sm text-red-600 mb-4">{duplicateError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={handleDuplicateEvent}
+                disabled={!duplicateEventDate || duplicatingInFlight}
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-purple rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {duplicatingInFlight ? "Creating..." : "Create duplicate"}
+              </button>
+              <button
+                onClick={() => setDuplicateModalOpen(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel

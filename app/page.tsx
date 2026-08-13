@@ -5,13 +5,19 @@ import DuotoneExpertCard from "@/components/marketing/DuotoneExpertCard";
 import SectionHeading from "@/components/marketing/SectionHeading";
 import { getHomePageConfig } from "@/lib/getHomePageConfig";
 import { getMembershipConfig, interpolatePrice } from "@/lib/siteConfig";
-import { getSoonestUpcomingEvent, getFeaturedPanelists } from "@/lib/eventAccess";
+import {
+  getUpcomingEventsForHome,
+  getFeaturedPanelists,
+  getEpisodeCardImagePreference,
+  pickEpisodeThumbnail,
+} from "@/lib/eventAccess";
 import type { CtaTarget } from "@/lib/homePageConfig";
 import { jakarta, DISPLAY } from "@/lib/fonts";
 
 export const dynamic = "force-dynamic";
 
 const FEATURED_EXPERTS_LIMIT = 6;
+const UPCOMING_EVENTS_LIMIT = 3;
 
 function resolveCtaHref(target: CtaTarget, checkoutUrl: string): string {
   return target === "checkout" ? checkoutUrl : "/membership";
@@ -22,10 +28,11 @@ function formatEventDate(date: Date) {
 }
 
 export default async function HomePage() {
-  const [config, membership, event, experts] = await Promise.all([
+  const [config, membership, upcomingEvents, thumbnailPreference, experts] = await Promise.all([
     getHomePageConfig(),
     getMembershipConfig(),
-    getSoonestUpcomingEvent(),
+    getUpcomingEventsForHome(UPCOMING_EVENTS_LIMIT),
+    getEpisodeCardImagePreference(),
     getFeaturedPanelists(FEATURED_EXPERTS_LIMIT),
   ]);
 
@@ -73,27 +80,52 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Upcoming Event */}
-      {event && (
+      {/* Upcoming Events */}
+      {upcomingEvents.length > 0 && (
         <section className="py-[clamp(56px,8vw,96px)] px-[clamp(20px,5vw,64px)] bg-white">
-          <div className="max-w-[720px] mx-auto text-center">
-            <p className="text-sm font-bold tracking-widest uppercase text-brand-orange mb-6">
+          <div className="max-w-[1280px] mx-auto text-center">
+            <p className="text-sm font-bold tracking-widest uppercase text-brand-orange mb-10">
               {config.upcomingEvent.heading}
             </p>
-            <Link
-              href="/register"
-              className="block bg-brand-bg border border-brand-ink/[0.08] rounded-[24px] p-[clamp(32px,5vw,56px)] hover:shadow-lg hover:border-brand-orange/30 transition-all"
-            >
-              <p className="text-sm text-brand-muted mb-3">{formatEventDate(event.eventDate)}</p>
-              <h2
-                className={`${DISPLAY} text-[clamp(24px,3vw,34px)] font-extrabold tracking-tight text-brand-ink mb-6`}
-              >
-                {event.titleYoutube || event.titleOriginal}
-              </h2>
-              <span className="inline-block bg-brand-orange text-white text-sm font-bold px-7 py-3.5 rounded-full">
-                Save My Free Seat
-              </span>
-            </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+              {upcomingEvents.map((event) => {
+                const thumbnail = pickEpisodeThumbnail(event, thumbnailPreference);
+                return (
+                  <Link
+                    key={event.id}
+                    href="/register"
+                    className="block bg-brand-bg border border-brand-ink/[0.08] rounded-[24px] overflow-hidden hover:shadow-lg hover:border-brand-orange/30 transition-all"
+                  >
+                    <div className="aspect-video bg-brand-ink/5">
+                      {thumbnail ? (
+                        <img
+                          src={thumbnail}
+                          alt={event.titleYoutube ?? event.titleOriginal}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-brand-muted text-sm">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-[clamp(24px,3vw,32px)]">
+                      <p className="text-sm text-brand-muted mb-3">
+                        {formatEventDate(event.eventDate)}
+                      </p>
+                      <h2
+                        className={`${DISPLAY} text-[clamp(19px,2vw,22px)] font-extrabold tracking-tight text-brand-ink mb-6 line-clamp-2`}
+                      >
+                        {event.titleYoutube || event.titleOriginal}
+                      </h2>
+                      <span className="inline-block bg-brand-orange text-white text-sm font-bold px-7 py-3.5 rounded-full">
+                        Save My Free Seat
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
